@@ -24,6 +24,4 @@ The JAR file may be used as a "library".
 
 If you wish to run the JAR file, download just the jarDL/Imatic8Prog.jar from
 the repository. To run (if no JAR file association) with:
-    'java -jar Imatic8Prog.jar'  
-or 
-    'java -jar Imatic8Prog.jar [args]'
+    'java -jar Imatic8Prog.jar' or  'java -jar Imatic8Prog.jar [args]'
