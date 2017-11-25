@@ -22,6 +22,8 @@ to the board results in out-of-sync states between the board and INI states.
 
 The JAR file may be used as a "library".
 
-If wish to run just the JAR file, download the dist/Imatic8Prog.jar from
-the repository. To run (if no JAR file association with:
-'java -jar Imatic8Prog.jar'  or 'java -jar Imatic8Prog.jar [args]').
+If you wish to run the JAR file, download just the jarDL/Imatic8Prog.jar from
+the repository. To run (if no JAR file association) with:
+    'java -jar Imatic8Prog.jar'  
+or 
+    'java -jar Imatic8Prog.jar [args]'
