@@ -33,46 +33,25 @@ import static imatic8.Imatic8Constants.RELAY_ALL_OFF_CODE;
 import static imatic8.Imatic8Constants.RELAY_ALL_ON_CODE;
 import static imatic8.Imatic8Constants.RELAY_OFF_CODE;
 import static imatic8.Imatic8Constants.RELAY_ON_CODE;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Properties;
 import static imatic8.Imatic8Constants.RESPONSE_RELAY_NUMBER_BYTE_INDEX;
 import static imatic8.Imatic8Constants.RESPONSE_ON_OFF_STATE_BYTE_INDEX;
 
 /**
- * Class that recorder the requests for relay activation in an INI file so a
- * best guess state of the relays is possible&#46; The Imatic8 board does not
- * support a relay state query message, so what is set is best guess.
+ * Class that keeps a record of the relay settings.
  *
  * @author dbradley
  */
 class Imatic8RelayRecorder {
 
-    private final static String RECORDER_FILE_NAME = "Imatic8Record.ini";
-
-    /**
-     * User directory the Imatic8Prog is being run from.
-     */
-    private final File userDir;
-    /**
-     * The full path for the properties file.
-     */
-    private final File propertyFile;
-
-    private Properties propertiesObject = null;
+    private final Imatic8BoardData boardData;
 
     /**
      * Create the Imatic8 recorder for the relay states. This only represents
      * the state as per command/argument request and not the actual board. The
      * board does not support a relay state query.
      */
-    Imatic8RelayRecorder() {
-        this.userDir = new File(System.getProperty("user.dir"));
-        this.propertyFile = new File(userDir, RECORDER_FILE_NAME);
-
+    Imatic8RelayRecorder(Imatic8BoardData boardData) {
+        this.boardData = boardData;
     }
 
     /**
@@ -111,7 +90,7 @@ class Imatic8RelayRecorder {
      *                             board
      */
     void setRelayRecord(byte[] boardResponseByteArr) {
-        loadProperties();
+        Imatic8BoardIni propIni = this.boardData.propIni;
 
         // successful action as a response received
         byte relNumResponse = boardResponseByteArr[RESPONSE_RELAY_NUMBER_BYTE_INDEX];
@@ -143,90 +122,29 @@ class Imatic8RelayRecorder {
         // process the properties for all
         if (relayNum == -1) {
             for (int i = MIN_RELAY_NUMBER; i <= MAX_RELAY_NUMBER; i++) {
-                propertiesObject.setProperty(String.format("R%d", i), state);
+                propIni.setProperty(String.format("R%d", i), state);
             }
         } else {
-            propertiesObject.setProperty(String.format("R%d", relayNum), state);
+            propIni.setProperty(String.format("R%d", relayNum), state);
         }
-        // store the property
-        storeProperties();
+        // store the properties
+        propIni.storeProperties();
     }
 
     /** Report the relay states (best guess) from the INI file. */
     void reportRelayStates() {
-        loadProperties();
+        Imatic8BoardIni propIni = this.boardData.propIni;
 
         // propertiesObject.list(System.out);
         // does not output in 1 to 8 order (that its random)
         String lineOfStates = "Status:";
         for (int i = MIN_RELAY_NUMBER; i <= MAX_RELAY_NUMBER; i++) {
             String key = String.format("R%d", i);
-            String c = propertiesObject.getProperty(key)
+            String c = propIni.getProperty(key)
                     .equals("off") ? "-" : String.format("%d", i);
 
             lineOfStates = String.format("%s%s", lineOfStates, c);
         }
         System.out.printf("%s\n", lineOfStates);
-    }
-
-    /**
-     * Load the INI properties file that is the best guess of the relay states.
-     * Creates the INI at 'off all' if not found.
-     */
-    @SuppressWarnings("CallToPrintStackTrace")
-    private void loadProperties() {
-        if (propertiesObject == null) {
-            try {
-                FileInputStream iStream = new FileInputStream(propertyFile);
-
-                propertiesObject = new Properties();
-                try {
-                    propertiesObject.load(iStream);
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                    System.exit(-97);
-                }
-                try {
-                    iStream.close();
-                } catch (IOException ex) {
-                    // nothing can be done;
-                }
-
-            } catch (FileNotFoundException ex) {
-                // need to create the file for the first time
-                propertiesObject = new Properties();
-
-                for (int i = MIN_RELAY_NUMBER; i <= MAX_RELAY_NUMBER; i++) {
-                    propertiesObject.setProperty(
-                            String.format("R%d", i), "OFF");// R1 R2 ......
-                }
-                storeProperties();
-            }
-        }
-    }
-
-    /** Store the relay states properties to the INI. */
-    @SuppressWarnings("CallToPrintStackTrace")
-    private void storeProperties() {
-        FileOutputStream oStream;
-        try {
-            oStream = new FileOutputStream(propertyFile);
-            try {
-                propertiesObject.store(oStream, "Imatic8 relay states (best guess)");
-
-            } catch (IOException ex1) {
-                ex1.printStackTrace();
-                System.exit(-99);
-            }
-            try {
-                oStream.close();
-            } catch (IOException ex) {
-                // nothing we can do
-            }
-
-        } catch (FileNotFoundException ex1) {
-            ex1.printStackTrace();
-            System.exit(-98);
-        }
     }
 }

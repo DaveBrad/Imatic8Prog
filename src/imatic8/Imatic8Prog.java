@@ -28,6 +28,7 @@
 package imatic8;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -45,9 +46,9 @@ import java.util.ArrayList;
  * other S/W is C, C++ which needs to be compiled for specific OS platforms,
  * this Java program requires an installed JRE arrangement.)
  * <p>
- * IMPORTANT: The Imatic8 board lacks a means to query the relay states so this program
- * records the states as a best guest. It will be out of sync if there are power
- * outages, disconnects of either board or this controlling program.
+ * IMPORTANT: The Imatic8 board lacks a means to query the relay states so this
+ * program records the states as a best guest. It will be out of sync if there
+ * are power outages, disconnects of either board or this controlling program.
  * <h1>Usage</h1>
  * <table class="mode">
  * <caption>operation modes</caption>
@@ -64,7 +65,7 @@ import java.util.ArrayList;
  * <td style="background: #c6f3ed">
  * <pre>
  * Imatic8Prog.jar&nbsp;
- * I&gt;[arguments] 
+ * I&gt;[arguments]
  * </pre>
  * </td>
  * <td style="background: #ffffcc;">
@@ -150,7 +151,7 @@ import java.util.ArrayList;
 public class Imatic8Prog {
 
     private Imatic8Prog() {
-
+        //
     }
 
     /**
@@ -161,60 +162,77 @@ public class Imatic8Prog {
 
         if (args.length == 0) {
             // interactive mode
-
-            // launch a window frame for processing the relays
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            ArrayList<String> tokenList = new ArrayList<>();
-
-            Imatic8CommandLine imaticCommandLine = new Imatic8CommandLine();
-
-            while (true) {
-                try {
-                    // processing a line by line input until 'exit' is entered
-                    System.out.printf("I>");
-                    String readLn = reader.readLine();
-
-                    // convert the input line into tokens which represent
-                    // arguments
-                    String[] tokenArr = readLn.split(" ");
-                    tokenList.clear();
-
-                    for (String s : tokenArr) {
-                        if (!s.isEmpty()) {
-                            tokenList.add(s);
-                        }
-                    }
-                    // have a basic tokenized, blank lines ignore
-                    boolean helpProvided = false;
-
-                    if (!tokenList.isEmpty()) {
-                        String arg0 = tokenList.get(0).toLowerCase();
-
-                        checkForExit(arg0);
-                        helpProvided = checkForHelpOrLicense(arg0);
-                    }
-                    if (!helpProvided) {
-                        // change to an args String[] form
-                        String[] argsArr = tokenList.toArray(new String[tokenList.size()]);
-                        imaticCommandLine.processCommandLineArgs(argsArr);
-                    }
-
-                } catch (IOException ex) {
-                    System.err.println("Unable to read from input/STDIN system.");
-                    System.exit(-1);
-                }
-            } // while true loop
+            processInteractiveMode();
         } else {
-            // determine if help first
+            // command line mode
+            //
+            // determine if help or define ip first
+            //
             String arg0 = args[0].toLowerCase();
 
             if (checkForHelpOrLicense(arg0)) {
                 System.exit(0);
             }
+            if (processCheckForDefineIP(arg0, args)) {
+                System.exit(0);
+            }
             // command mode operation
             new Imatic8CommandLine().processCommandLineArgs(args);
-
         }
+    }
+
+    /**
+     * Process with the input from console in interactive mode.
+     */
+    private static void processInteractiveMode() {
+        // interactive mode
+
+        // launch a window frame for processing the relays
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        ArrayList<String> tokenList = new ArrayList<>();
+
+        Imatic8CommandLine imaticCommandLine = new Imatic8CommandLine();
+
+        while (true) {
+            try {
+                // processing a line by line input until 'exit' is entered
+                System.out.printf("I>");
+                String readLn = reader.readLine();
+
+                // convert the input line into tokens which represent
+                // arguments
+                String[] tokenArr = readLn.split(" ");
+                tokenList.clear();
+
+                for (String s : tokenArr) {
+                    if (!s.isEmpty()) {
+                        tokenList.add(s);
+                    }
+                }
+                // change to an args String[] form
+                String[] argsArr = tokenList.toArray(new String[tokenList.size()]);
+
+                // have a basic tokenized, blank lines ignore
+                boolean noneOperationCmds = false;
+
+                if (!tokenList.isEmpty()) {
+                    String arg0 = tokenList.get(0).toLowerCase();
+
+                    checkForExit(arg0);
+                    // if we get a 
+                    noneOperationCmds |= checkForHelpOrLicense(arg0);
+                    noneOperationCmds |= processCheckForDefineIP(arg0, argsArr);
+                }
+                if (!noneOperationCmds) {
+
+                    imaticCommandLine.processCommandLineArgs(argsArr);
+                }
+
+            } catch (IOException ex) {
+                System.err.println("Unable to read from input/STDIN system.");
+                System.exit(-1);
+            }
+        } // while true loop
     }
 
     /**
@@ -234,15 +252,15 @@ public class Imatic8Prog {
     /**
      * Check if a help/license is provided and output
      *
-     * @param arg0 string of lower-case argument 0
+     * @param arg0LC string of lower-case argument 0
      *
      * @return true if a help or license request
      */
-    private static boolean checkForHelpOrLicense(String arg0) {
+    private static boolean checkForHelpOrLicense(String arg0LC) {
         // check for each help/license command type in the 0 argument
         for (String exitStr : new String[]{"help", "l", "-help", "/?", "?", "license"}) {
-            if (arg0.equals(exitStr)) {
-                if (arg0.startsWith("l")) {
+            if (arg0LC.equals(exitStr)) {
+                if (arg0LC.startsWith("l")) {
                     // user request license 
                     licensePrint();
                 } else {
@@ -256,6 +274,91 @@ public class Imatic8Prog {
         return false;
     }
 
+    private static boolean processCheckForDefineIP(String arg0LC, String... args) {
+        if (!arg0LC.startsWith("defip-")) {
+            // none operation command in the queue is false
+            return false;
+        }
+        // only two args are allowed
+        if (args.length != 2) {
+            System.err.printf("ERROR: defip-N has one argument following.\n", arg0LC);
+            return true; // this will be an error condition so stop proceeding forward
+        }
+        // have define IP address and board command
+        // 'defip-N nnn.nnn.nnn.nnn
+        //
+        // get the N
+        String[] splitArg0Arr = arg0LC.split("-");
+
+        if (splitArg0Arr.length != 2) {
+            System.err.printf("ERROR: not defip-N format, found '%s'\n", arg0LC);
+            return true; // this will be an error condition so stop proceeding forward
+        }
+        String nPart = splitArg0Arr[1];
+        int nBoard;
+        try {
+            nBoard = Integer.parseInt(nPart);
+
+        } catch (NumberFormatException ex) {
+            System.err.printf("ERROR: not defip-N format N not digit, found '%s': %s \n",
+                    arg0LC, ex.getMessage());
+            return true;
+        }
+        if (nBoard < 1) {
+            System.err.printf("ERROR: not defip-N format N needs to start at 1, found '%s'\n", arg0LC);
+            return true;
+        }
+        // the following parameter needs to be an IPV4 address string
+        String ipArg = args[1];
+
+        String[] ipArgArr = ipArg.split("\\.");
+
+        int ipLen = ipArgArr.length;
+        if (ipLen != 4) {
+            System.err.printf("ERROR: defip-N IP address not nnn.nnn.nnn.nnn (n.n.n.n) format\n", arg0LC);
+            return true; // this will be an error condition so stop proceeding forward
+        }
+        // 
+        boolean iperror = false;
+
+        for (int i = 0; i < ipLen; i++) {
+            // validate the string is an IPV4 address
+            try {
+                int value = Integer.parseInt(ipArgArr[i]);
+
+                if (value < 0 || value > 255) {
+                    System.err.printf("ERROR: defip-N IP field [%d] value not 0-255 error: %s\n", i, ipArgArr[i]);
+                    iperror = true;
+                }
+
+            } catch (NumberFormatException ex) {
+                System.err.printf("ERROR: defip-N IP field [%d] not number error: %s\n", i, ipArgArr[i]);
+                iperror = true;
+            }
+        }
+        // if an IP error occured then need to proceed
+        if (iperror) {
+            return true;
+        }
+        // create the INI file for the board and the IP address provided, as long
+        // as there is not an existing one
+        File boardsIniFile = Imatic8BoardIni.getBoardIniFile(nBoard);
+
+        if (boardsIniFile.exists()) {
+            System.err.printf("ERROR: defip-N: N %d already exists.\n"
+                    + "      Need to delete file manually to overwrite.\n       %s\n",
+                    nBoard,
+                    boardsIniFile.getAbsolutePath());
+            return true;
+        }
+        Imatic8BoardData definedBoardData = Imatic8BoardData.defineBoardObject(nBoard, ipArg);
+
+        new Imatic8BoardIni(definedBoardData).loadProperties();
+
+        // this was a success so continue
+        return true;
+    }
+
     /** The help brief documentation. */
     private static final String[] helpDocLinesArr = new String[]{
         "Usage: - Command-line mode ",
@@ -265,7 +368,11 @@ public class Imatic8Prog {
         "           I>on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 3",
         "[args...]",
         "   help | -help | /? | ? | license | l   [ exit | quit | q   - interactive only -]",
+        " - setup -",
+        "   defIP-N nnn.nnn.nnn.nnn         (define an IR address to associate",
+        "                                    with N used in b:N operation     )",
         " - operations -",
+        "   b-N                             (board N to operate on/off/status",
         "   on n [n [n...]]] | on all       (on relays)",
         "   off n [n [n...]]] | off all     (off relays)",
         "   s:N | ms:N                      (pause N seconds/milliseconds)",

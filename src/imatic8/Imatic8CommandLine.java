@@ -36,12 +36,12 @@ import static imatic8.Imatic8Constants.MIN_RELAY_NUMBER;
 import java.util.ArrayList;
 
 /**
- *  Class to process the command line arguments.
+ * Class to process the command line arguments.
  * <p>
- * This is used by command-mode and interactive-mode and will remove unwanted token
- * delimiters first, then validate (producing errors if needed), then storing
- * the operations into an array for action once validated.
- * 
+ * This is used by command-mode and interactive-mode and will remove unwanted
+ * token delimiters first, then validate (producing errors if needed), then
+ * storing the operations into an array for action once validated.
+ *
  * @author dbradley
  */
 class Imatic8CommandLine {
@@ -50,13 +50,15 @@ class Imatic8CommandLine {
      * The command-line argument array list of operations to perform in sequence
      * (as provided) once arguments are validated.
      */
-    private final ArrayList<OperationData> operationsList = new ArrayList<>();
+    private final ArrayList<Imatic8Action> operationsList = new ArrayList<>();
 
     /**
      * The arguments that are represented as data units. These units may be
      * grouped and/or co-associated. See the Imatic8Prog help information.
      */
     enum ArgType {
+        /** use board IP address for the b-N setting */
+        BOARD,
         /** on relay request */
         ON,
         /** off relay request */
@@ -65,7 +67,8 @@ class Imatic8CommandLine {
          * are converted to milliseconds on processing.
          */
         MS,
-        /** action is to ALL relays (on or off */
+        /** action is to ALL relays (on
+         * or off */
         ALL,
         /** relay number to action upon */
         RELAY_NUMBER,
@@ -88,6 +91,13 @@ class Imatic8CommandLine {
      */
     void processCommandLineArgs(String[] args) {
         operationsList.clear();
+
+        // the board that is being operated upon may be changed
+        // during the processing and the following represents which
+        // board number is set
+        //
+        // the default board is '1' 
+        int activeBoardN = 1;
 
         // on n [n [n [n...]]] | on all
         // off n [n [n [n...]]] | off all
@@ -127,7 +137,7 @@ class Imatic8CommandLine {
                                 ArgType actionType = operateOn ? ArgType.ON : ArgType.OFF;
                                 int relayNum = processNargument(argI);
 
-                                operationsList.add(new OperationData(actionType, relayNum));
+                                operationsList.add(new Imatic8Action(activeBoardN, actionType, relayNum));
                             }
                         } else {
                             // 
@@ -141,7 +151,7 @@ class Imatic8CommandLine {
                     if (!errorFound) {
                         // process the set-relay-action for all
                         ArgType actionType = operateOn ? ArgType.ON : ArgType.OFF;
-                        operationsList.add(new OperationData(actionType, -1));
+                        operationsList.add(new Imatic8Action(activeBoardN, actionType, -1));
                     }
                     break;
                 case MS:
@@ -152,16 +162,17 @@ class Imatic8CommandLine {
                     if (!errorFound) {
                         // process a timer/pause/delay action
                         int timerInMs = processTimerArgument(argI);
-                        operationsList.add(new OperationData(MS, timerInMs));
+                        operationsList.add(new Imatic8Action(activeBoardN, MS, timerInMs));
                     }
                     break;
                 case STATUS:
                     firstArgRead = false;
                     if (!errorFound) {
-                        operationsList.add(new OperationData(STATUS, 0));
+                        operationsList.add(new Imatic8Action(activeBoardN, STATUS, 0));
                     }
                     break;
                 case ON:
+                    // this is a setting rather than an action
                     firstArgRead = true;
 
                     timerIntroduced = false;
@@ -169,10 +180,18 @@ class Imatic8CommandLine {
 
                     break;
                 case OFF:
+                    // this is a setting rather than an action
                     firstArgRead = true;
 
                     timerIntroduced = false;
                     operateOn = false;
+
+                    break;
+                case BOARD:
+                    // this is a setting rather than an action
+                    //
+                    //99 need to deal with bad board number
+                    activeBoardN = processBoardArgument(argI);
 
                     break;
             }
@@ -189,25 +208,24 @@ class Imatic8CommandLine {
      */
     private boolean processAction() {
 
-        Imatic8Action imaticAction = new Imatic8Action();
         int lengthOfActionsToDo = this.operationsList.size();
 
         int lastItem = lengthOfActionsToDo - 1;
         for (int i = 0; i < lengthOfActionsToDo; i++) {
 
-            OperationData srd = this.operationsList.get(i);
+            Imatic8Action imaticAction = this.operationsList.get(i);
 
             boolean closeConnectionOnLastItem = (i == lastItem);
-            switch (srd.action) {
+            switch (imaticAction.action) {
                 case ON:
-                    if (imaticAction.setRelayOn(srd.valueForAction, closeConnectionOnLastItem) == null) {
+                    if (imaticAction.setRelayOn(closeConnectionOnLastItem) == null) {
                         // some error occurred which is unrecoverable
                         return false;
                     }
                     break;
 
                 case OFF:
-                    if (imaticAction.setRelayOff(srd.valueForAction, closeConnectionOnLastItem) == null) {
+                    if (imaticAction.setRelayOff(closeConnectionOnLastItem) == null) {
                         // some error occurred which is unrecoverable
                         return false;
                     }
@@ -216,7 +234,7 @@ class Imatic8CommandLine {
                 case MS:
                     // Java usually warns with a sleep-timer in a loop so
                     // use a method instead.
-                    imaticAction.timerWaitAction(srd.valueForAction, closeConnectionOnLastItem);
+                    imaticAction.timerWaitAction(closeConnectionOnLastItem);
                     break;
 
                 case STATUS:
@@ -250,7 +268,10 @@ class Imatic8CommandLine {
                 return ArgType.ALL;
             case "status":
                 return ArgType.STATUS;
-            default:
+            case "b-":
+                return ArgType.BOARD;
+            case "s:":
+            case "ms:":
                 int timerValue = processTimerArgument(arg);
 
                 if (timerValue > 0) {
@@ -268,6 +289,8 @@ class Imatic8CommandLine {
                     }
                 }
             // timer or relay-number check proved to be in error
+            default:
+            // this will be an error
         }
         return ArgType.ERROR_ARGUMENT;
     }
@@ -298,6 +321,7 @@ class Imatic8CommandLine {
     }
 
     /**
+     * Process the timer argument.
      *
      * @param arg a timer argument string will be checked for
      *
@@ -346,28 +370,67 @@ class Imatic8CommandLine {
     }
 
     /**
-     * Class that hold actions to be done on relays once the command line
-     * parameters have been processed.
+     * Process the board argument.
+     *
+     * @param arg a board argument string will be checked for
+     *
+     * @return > 0 a board value, -1 error detected
      */
-    class OperationData {
+    private int processBoardArgument(String argP) {
+        String arg = argP.toLowerCase();
 
-        /** ON or OFF action */
-        ArgType action;
+        // this can be a relay number or a timer setting
+        String boardNString = null;
 
-        /** 1-8 or -1 for ALL, or the pause time value in seconds */
-        int valueForAction;
-
-        /**
-         * Set relay data for an action when the
-         *
-         * @param action         ON or OFF
-         * @param valueForAction integer of the relay, or 0 if ALL, or a
-         *                       millisecond timer value for pause action
-         */
-        OperationData(ArgType action, int valueForAction) {
-            this.action = action;
-            this.valueForAction = valueForAction;
+        if (arg.startsWith("b-")) {
+            boardNString = arg.substring(2);
         }
+        // 
+        if (boardNString == null) {
+            // not a board argument
+            return -1;
+        }
+        // this is a timer request to be processed
+        // convert the secomds or milliseconds to an integer value
+        try {
+            int boardValue = Integer.parseInt(boardNString);
+
+            if (boardValue > 0) {
+                System.err.printf("ERROR: board value should be greater than 0: %s\n", arg);
+            } else {
+                return boardValue;
+            }
+
+        } catch (NumberFormatException nfe) {
+            System.err.printf("ERROR: board value conversion: %s: %s\n", nfe.getMessage(), arg);
+        }
+        return -1;
     }
 
+//    /**
+//     * Class that hold actions to be done on relays once the command line
+//     * parameters have been processed.
+//     */
+//    class OperationData {
+//        
+//       
+//
+//        /** ON or OFF action */
+//        ArgType action;
+//
+//        /** 1-8 or -1 for ALL, or the pause time value in seconds */
+//        int valueForAction;
+//
+//        /**
+//         * Set relay data for an action when the
+//         *
+//         * @param action         ON or OFF
+//         * @param valueForAction integer of the relay, or 0 if ALL, or a
+//         *                       millisecond timer value for pause action
+//         */
+//        OperationData(int boardN, ArgType action, int valueForAction) {
+//            this.action = action;
+//            this.valueForAction = valueForAction;
+//        }
+//    }
 }
