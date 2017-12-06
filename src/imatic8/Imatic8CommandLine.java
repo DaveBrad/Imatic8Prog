@@ -33,6 +33,7 @@ import static imatic8.Imatic8CommandLine.ArgType.RELAY_NUMBER;
 import static imatic8.Imatic8CommandLine.ArgType.STATUS;
 import static imatic8.Imatic8Constants.MAX_RELAY_NUMBER;
 import static imatic8.Imatic8Constants.MIN_RELAY_NUMBER;
+import java.io.File;
 import java.util.ArrayList;
 
 /**
@@ -114,7 +115,7 @@ class Imatic8CommandLine {
 
         for (String argI : args) {
             // the first time an ON or OFF is needed
-            ArgType type = processArgument(firstArgRead, argI);
+            ArgType type = processArgType(firstArgRead, argI);
 
             switch (type) {
                 case ERROR_ARGUMENT:
@@ -191,8 +192,19 @@ class Imatic8CommandLine {
                     // this is a setting rather than an action
                     //
                     //99 need to deal with bad board number
+                    firstArgRead = true;
+
                     activeBoardN = processBoardArgument(argI);
 
+                    // need to load the board so active board actions
+                    // may be processed
+                    if (activeBoardN > 0) {
+                        if (!Imatic8BoardData.loadBoardObject(activeBoardN)) {
+                            errorFound = true;
+                            System.err.printf("ERROR: Board %d not defined: %s\n",
+                                    activeBoardN, argI);
+                        }
+                    }
                     break;
             }
         }
@@ -257,7 +269,7 @@ class Imatic8CommandLine {
      *
      * @return ArgType the type of the argument
      */
-    private ArgType processArgument(boolean firstOnOrOffArgRead, String arg) {
+    private ArgType processArgType(boolean firstOnOrOffArgRead, String arg) {
 
         switch (arg.toLowerCase()) {
             case "on":
@@ -268,29 +280,37 @@ class Imatic8CommandLine {
                 return ArgType.ALL;
             case "status":
                 return ArgType.STATUS;
-            case "b-":
-                return ArgType.BOARD;
-            case "s:":
-            case "ms:":
-                int timerValue = processTimerArgument(arg);
 
-                if (timerValue > 0) {
-                    return ArgType.MS;
+            default:
+                // one of 'b-', 's:', 'ms:' or 'N' for a relay number
+                // that associates with a 'on'/'off' action'
+                //
+                int boardNValue = processBoardArgument(arg);
+                if (boardNValue > 0) {
+                    return ArgType.BOARD;
                 }
-                // timer value of 0 means check for a relay N argument
-                if (timerValue == 0) {
-                    // but only if the on or off has been read
-                    if (firstOnOrOffArgRead) {
-                        // expect a number for the relay to operate
-                        int relayNum = processNargument(arg);
-                        if (relayNum != -1) {
-                            return ArgType.RELAY_NUMBER;
+                // not a boardN value, check timer or relay
+                if (boardNValue == 0) {
+                    // check for timer
+                    int timerValue = processTimerArgument(arg);
+
+                    if (timerValue > 0) {
+                        return ArgType.MS;
+                    }
+                    // not a boardN/timer check for a relay N argument
+                    if (timerValue == 0) {
+                        // but only if the on or off has been read
+                        if (firstOnOrOffArgRead) {
+                            // expect a number for the relay to operate
+                            int relayNum = processNargument(arg);
+                            if (relayNum != -1) {
+                                return ArgType.RELAY_NUMBER;
+                            }
                         }
                     }
                 }
             // timer or relay-number check proved to be in error
-            default:
-            // this will be an error
+
         }
         return ArgType.ERROR_ARGUMENT;
     }
@@ -388,7 +408,7 @@ class Imatic8CommandLine {
         // 
         if (boardNString == null) {
             // not a board argument
-            return -1;
+            return 0;
         }
         // this is a timer request to be processed
         // convert the secomds or milliseconds to an integer value
@@ -396,9 +416,26 @@ class Imatic8CommandLine {
             int boardValue = Integer.parseInt(boardNString);
 
             if (boardValue > 0) {
-                System.err.printf("ERROR: board value should be greater than 0: %s\n", arg);
+                // need to check that there is an INI file for this
+                // board number, otherwise it is an error
+
+                File ini4Board = Imatic8BoardIni.getBoardIniFile(boardValue);
+
+                if (ini4Board.isFile()) {
+                    return boardValue;
+                }
+                // if the boardN is 1 and there is no INI file for it, automatically
+                // create the file, OTHERWISE this is an error
+                if (boardValue == 1) {
+                    // create the board1 INI file
+                    Imatic8BoardData board1 = Imatic8BoardData.defineBoardObject(1, Imatic8Constants.IMATIC8_IP_ADDR);
+                    return 1;
+                }
+                System.err.printf("ERROR: no INI file for board %d, need to use 'defip-%d n.n.n.n' to define.\n",
+                        boardValue, boardValue);
+
             } else {
-                return boardValue;
+                System.err.printf("ERROR: board value should be greater than 0: %s\n", arg);
             }
 
         } catch (NumberFormatException nfe) {
@@ -406,31 +443,4 @@ class Imatic8CommandLine {
         }
         return -1;
     }
-
-//    /**
-//     * Class that hold actions to be done on relays once the command line
-//     * parameters have been processed.
-//     */
-//    class OperationData {
-//        
-//       
-//
-//        /** ON or OFF action */
-//        ArgType action;
-//
-//        /** 1-8 or -1 for ALL, or the pause time value in seconds */
-//        int valueForAction;
-//
-//        /**
-//         * Set relay data for an action when the
-//         *
-//         * @param action         ON or OFF
-//         * @param valueForAction integer of the relay, or 0 if ALL, or a
-//         *                       millisecond timer value for pause action
-//         */
-//        OperationData(int boardN, ArgType action, int valueForAction) {
-//            this.action = action;
-//            this.valueForAction = valueForAction;
-//        }
-//    }
 }

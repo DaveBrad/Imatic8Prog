@@ -41,7 +41,7 @@ import java.util.HashMap;
  */
 class Imatic8BoardData {
 
-     final static HashMap<Integer, Imatic8BoardData> boardNDataHash = new HashMap<>();
+    final static HashMap<Integer, Imatic8BoardData> boardNDataHash = new HashMap<>();
 
     private int boardNumber;
     private String boardIpAddr;
@@ -52,17 +52,15 @@ class Imatic8BoardData {
     private Imatic8RelayRecorder recorder;
 
     Imatic8BoardIni propIni;
-    
-    
-    static Imatic8BoardData getBoardNInstance(Integer boardN){
-        // reuse tge board controller
-        if(boardNDataHash.containsKey(boardN)){
-            return boardNDataHash.get(boardN);
-        }
-        // need to create a board controller, so tell the originator
-        return createBoardNFromINI(boardN);
-    }
 
+//    static Imatic8BoardData getBoardNInstance(Integer boardN){
+//        // reuse tge board controller
+//        if(boardNDataHash.containsKey(boardN)){
+//            return boardNDataHash.get(boardN);
+//        }
+//        // need to create a board controller, so tell the originator
+//        return createBoardNFromINI(boardN);
+//    }
     /**
      * A board is a real-world object.
      *
@@ -74,7 +72,7 @@ class Imatic8BoardData {
     static Imatic8BoardData createBoardNFromINI(int boardNumberP) {
         // an INI file needs to exist for a board object to be created
         Imatic8BoardData nuBoarddata = new Imatic8BoardData(boardNumberP);
-        
+
         nuBoarddata.boardNumber = boardNumberP;
         nuBoarddata.portNo = 30000;
 
@@ -82,7 +80,7 @@ class Imatic8BoardData {
 
         // get the IP address for the board from the INI file
         nuBoarddata.boardIpAddr = nuBoarddata.propIni.getIpAddrStr();
-        
+
         return nuBoarddata;
     }
 
@@ -104,6 +102,19 @@ class Imatic8BoardData {
         return nuBoarddata;
     }
 
+    static boolean loadBoardObject(int boardNumberP) {
+        if (!boardNDataHash.containsKey(boardNumberP)) {
+            // the board data object has not been loaded, so load it
+            Imatic8BoardData nuBoarddata = createBoardNFromINI(boardNumberP);
+
+            if (nuBoarddata == null) {
+                return false;
+            }
+        }
+        return true; //  means exists
+    }
+
+    @SuppressWarnings("LeakingThisInConstructor")
     private Imatic8BoardData(int boardNumberP) {
         //
         boardNDataHash.put(boardNumberP, this);
@@ -268,9 +279,9 @@ class Imatic8BoardData {
     private String errorMsg(IOException ex) {
         return String.format("ERROR IO: %s", ex.getMessage());
     }
-    
-    void reportRelayStates(){
-        this.recorder.reportRelayStates(); 
+
+    void reportRelayStates() {
+        this.recorder.reportRelayStates();
     }
 
 }
