@@ -44,18 +44,18 @@ import java.util.Properties;
  *
  * @author dbradley
  */
-public class Imatic8BoardIni extends Properties {
+class Imatic8BoardIni extends Properties {
 
     private final static String RECORDER_FILE_NAME = "Imatic8Record%s.ini";
 
     private final static String PROP_IP_STRING = "ip";
     private final static String PROP_PORT_STRING = "port";
-    
-      /** INI off state */
-    public static String IMATIC8_INI_OFF_STATE = "off";
-    
-      /** INI on state */
-    public static String IMATIC8_INI_ON_STATE = "on";
+
+    /** INI off state */
+    static String IMATIC8_INI_OFF_STATE = "off";
+
+    /** INI on state */
+    static String IMATIC8_INI_ON_STATE = "on";
 
     private final Imatic8BoardData boardData;
 

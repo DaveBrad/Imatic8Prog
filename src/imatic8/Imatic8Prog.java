@@ -80,7 +80,7 @@ import java.util.ArrayList;
  * <table >
  * <caption>[arguments] (case insensitive)</caption>
  * <tr>
- * <td style="vertical-align:top">single relay</td>
+ * <td style="vertical-align:top; width: 17ch;">single relay</td>
  * <td style="vertical-align:top">
  * <pre> <span style="color: green;">ON 1</span>
  * <span style="color: magenta;">OFF 1</span>
@@ -92,6 +92,7 @@ import java.util.ArrayList;
  * </pre>
  * </td>
  * </tr>
+ *
  * <tr>
  * <td style="vertical-align:top">grouped relays</td>
  * <td style="vertical-align:top">
@@ -112,6 +113,22 @@ import java.util.ArrayList;
  * <td style="vertical-align:top">mixed allows on or off in different ways
  * </td>
  * </tr>
+ *
+ * <tr>
+ * <td style="vertical-align:top">board context</td>
+ * <td style="vertical-align:top">
+ * <pre> <span style="background: springgreen;">b-1</span> <span style="color: green;">on 1 8</span> <span style="color: magenta;">off 2 3 5</span>
+ * <span style="background: springgreen;">b-2,</span> <span style="color: green;">on 1</span> <span style="background: springgreen;">b-1</span> <span style="color: magenta;">off 2 3</span> <span style="color: green;">on 8</span> <span style="color: magenta;">off 5</span></pre>
+ * </td>
+ * <td style="vertical-align:top">for multiple boards the on/off/status needs to
+ * be preceded by a 'b-N' operation to set the context, if no b-N is provided on
+ * the argument line b-1 is the default.
+ * <div style="font-size: 0.75em; margin-left: 15px;">See defip-N for more
+ * detail</div>
+ * <br>
+ * </td>
+ * </tr>
+ *
  * <tr>
  * <td style="vertical-align:top">pause between operations</td>
  * <td style="vertical-align:top">
@@ -127,9 +144,9 @@ import java.util.ArrayList;
  * <tr>
  * <td style="vertical-align:top">best guess relay status query</td>
  * <td style="vertical-align:top"><pre> status</pre></td>
- * <td style="vertical-align:top"><pre style="margin-bottom: 3px;">Status:123-5---</pre>
- * <div style="font-size: 0.75em; margin-left: 15px;">ON=digit (is output to the
- * 'System.out' stream)</div>
+ * <td style="vertical-align:top"><pre style="margin-bottom: 3px;">Status:b-1:123-5---</pre>
+ * <div style="font-size: 0.75em; margin-left: 15px;">b-N=board-N<br>ON=digit
+ * (is output to the 'System.out' stream)</div>
  * </td>
  * </tr>
  * <tr>
@@ -143,6 +160,50 @@ import java.util.ArrayList;
  * <td style="background: #c6f3ed;vertical-align:top"><pre> exit | quit | q</pre></td>
  * <td style="background: #c6f3ed;vertical-align:top"><i>only needed in
  * interactive mode</i></td>
+ * </tr>
+ * </table>
+ * <br><br>
+ * <table>
+ * <caption style="color: white;">define board</caption>
+ * <tr>
+ * <td style="background: #ffffe6; vertical-align:top; width: 17ch;">define
+ * board N<br>IP address</td>
+ * <td style="background: #ffffe6; vertical-align:top">
+ * <pre> <span style="color: green;">defip-2 192.168.1.5</span>
+ * <span style="color: magenta;">defip-1 192.168.1.8</span>
+ * </pre>
+ * </td>
+ *
+ * <td style="background: #ffffe6; vertical-align:top"><pre style="margin-bottom: 0px;">
+ *defip-N nnn.nnn.nnn.nnn</pre>
+ * <div style="font-size: 0.75em; margin-left: 15px; margin-top: 6px;">'N' board
+ * number&nbsp;&nbsp;&nbsp; 'nnn' 0-255 IPV4 number</div>
+ * </td>
+ * </tr>
+ * <tr>
+ * <td style="background: #ffffe6; vertical-align:top"></td>
+ * <td style="background: #ffffe6; vertical-align:top" colspan="2">
+ * Defines the IP address associated with a 'b-N' operation for board context.
+ * ONLY NEEDS TO BE DONE ONCE for each board.
+ * <p>
+ * The Imatic board can be changed to use a different IP address from the
+ * default 192.168.1.4; so setting a board-N allows Imatic8Prog to support a
+ * different IP address.
+ * <p>
+ * If no 'defip-N' is set up, an INI for board-1 will be created using the
+ * default IP address.
+ * </p>
+ * <p>
+ * If you have multiple boards on your network (appears to be possible) but with
+ * different IP address then a defip-N needs to be done for each board.
+ * </p>
+ * <P>
+ * IMPORTANT: if you wish to change a board-N IP address, delete the INI file
+ * and then re-define.
+ * <br>
+ * <span style="color: magenta;">NOTE:</span> defip-1 192.168.1.8 overrides the default setting IP address
+ * but needs to done before using Imatic8Prog.
+ * </td>
  * </tr>
  * </table>
  *
