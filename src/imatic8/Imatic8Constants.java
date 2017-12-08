@@ -35,52 +35,50 @@ package imatic8;
  *
  * @author dbradley
  */
-public class Imatic8Constants {
+class Imatic8Constants {
 
     /** 1 */
-    public static int MIN_RELAY_NUMBER = 1;
+    static int MIN_RELAY_NUMBER = 1;
     /** 8 */
-    public static int MAX_RELAY_NUMBER = 8;
+    static int MAX_RELAY_NUMBER = 8;
 
     /** IP address default */
-    public static String IMATIC8_IP_ADDR = "192.168.1.4";
-    
-  
-    
+    static String IMATIC8_IP_ADDR = "192.168.1.4";
+
     /** Imatic8 port number */
-    public static int IMATIC8_PORT_NO = 30000;
+    static int IMATIC8_PORT_NO = 30000;
 
     /** Connection send/receive timeout */
-    public static final int TIMEOUT_FOR_CONNECTION_SETUP = 2000;
+    static final int TIMEOUT_FOR_CONNECTION_SETUP = 2000;
 
     // send messages indexes and codes 
     /** Relay byte location index in the send message array. */
-    public static final int RELAY_NUMBER_BYTE_INDEX = 3;
+    static final int RELAY_NUMBER_BYTE_INDEX = 3;
 
     /** Relay state (on/off) byte location index in the send message array. */
-    public static final int ON_OFF_STATE_BYTE_INDEX = 4;
+    static final int ON_OFF_STATE_BYTE_INDEX = 4;
 
     /** Single relay action for on. */
-    public static final byte RELAY_ON_CODE = 0x01;
+    static final byte RELAY_ON_CODE = 0x01;
 
     /** Single relay action for off. */
-    public static final byte RELAY_OFF_CODE = 0x00;
+    static final byte RELAY_OFF_CODE = 0x00;
 
     /** Value for ALL relay operation 'relay number'. */
-    public static final byte RELAY_ALL_NUMBER = (byte) 0xF8;
+    static final byte RELAY_ALL_NUMBER = (byte) 0xF8;
 
     /** All relay action for on. */
-    public static final byte RELAY_ALL_ON_CODE = (byte) 0x88;
+    static final byte RELAY_ALL_ON_CODE = (byte) 0x88;
 
     /** All relay action for off. */
-    public static final byte RELAY_ALL_OFF_CODE = (byte) 0x80;
+    static final byte RELAY_ALL_OFF_CODE = (byte) 0x80;
 
     // response message indexes
     /** Relay byte location index in the response message array. */
-    public static final int RESPONSE_RELAY_NUMBER_BYTE_INDEX = 1;
+    static final int RESPONSE_RELAY_NUMBER_BYTE_INDEX = 1;
 
     /** Relay state (on/off) byte location index in the response message array. */
-    public static final int RESPONSE_ON_OFF_STATE_BYTE_INDEX = 2;
+    static final int RESPONSE_ON_OFF_STATE_BYTE_INDEX = 2;
 
     /**
      * Byte array of message to be sent to the Imatic8 board where indexes 3 and
@@ -89,7 +87,7 @@ public class Imatic8Constants {
      *
      * <br>FD 02 20 &lt;relayNo&gt; &lt;on/off&gt; 5D
      */
-    public static final byte[] RELAY_MSG_ARRAY = new byte[]{
+    static final byte[] RELAY_MSG_ARRAY = new byte[]{
         (byte) 0xfd, // [0]
         (byte) 0x02, // [1]
         (byte) 0x20, // [2]
