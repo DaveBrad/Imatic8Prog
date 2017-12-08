@@ -45,7 +45,7 @@ public class Imatic8Constants {
     /** IP address */
     public static String IMATIC8_IP_ADDR = "192.168.1.4";
 
-    /** Imtaic8 port number */
+    /** Imatic8 port number */
     public static int IMATIC8_PORT_NO = 30000;
 
     /** Connection send/receive timeout */

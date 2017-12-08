@@ -53,14 +53,6 @@ class Imatic8BoardData {
 
     Imatic8BoardIni propIni;
 
-//    static Imatic8BoardData getBoardNInstance(Integer boardN){
-//        // reuse tge board controller
-//        if(boardNDataHash.containsKey(boardN)){
-//            return boardNDataHash.get(boardN);
-//        }
-//        // need to create a board controller, so tell the originator
-//        return createBoardNFromINI(boardN);
-//    }
     /**
      * A board is a real-world object.
      *
@@ -118,6 +110,7 @@ class Imatic8BoardData {
     private Imatic8BoardData(int boardNumberP) {
         //
         boardNDataHash.put(boardNumberP, this);
+        this.recorder = new Imatic8RelayRecorder(this);
     }
 
     int getBoardNumber() {

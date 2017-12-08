@@ -53,7 +53,6 @@ class Imatic8Action {
 
     /** 1-8 or -1 for ALL, or the pause time value in seconds */
     int valueForAction;
-    
 
     Imatic8Action(int boardN, Imatic8CommandLine.ArgType action, int valueForAction) {
         this.boardN = boardN;
@@ -61,6 +60,9 @@ class Imatic8Action {
         this.valueForAction = valueForAction;
 
         // the board controller object have already been set up so
+        if (!Imatic8BoardData.boardNDataHash.containsKey(boardN)) {
+            Imatic8BoardData.createBoardNFromINI(boardN);
+        }
         this.boardController = Imatic8BoardData.boardNDataHash.get(boardN);
     }
 

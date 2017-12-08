@@ -122,9 +122,13 @@ public class Imatic8BoardIni extends Properties {
 
         } catch (FileNotFoundException ex) {
             // need to create the file for the first time
-
-            // store the IP address for the board number and its port-no
-            this.setProperty(PROP_IP_STRING, this.boardData.getIpAddr());
+            if (this.boardData.getBoardNumber() == 1) {
+                // store the IP address for the board number and its port-no
+                this.setProperty(PROP_IP_STRING, Imatic8Constants.IMATIC8_IP_ADDR);
+            } else {
+                // store the IP address for the board number and its port-no
+                this.setProperty(PROP_IP_STRING, this.boardData.getIpAddr());
+            }
             this.setProperty(PROP_PORT_STRING, this.boardData.getPortString());
 
             // store the relay states 
