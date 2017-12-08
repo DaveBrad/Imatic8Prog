@@ -42,9 +42,11 @@ public class Imatic8Constants {
     /** 8 */
     public static int MAX_RELAY_NUMBER = 8;
 
-    /** IP address */
+    /** IP address default */
     public static String IMATIC8_IP_ADDR = "192.168.1.4";
-
+    
+  
+    
     /** Imatic8 port number */
     public static int IMATIC8_PORT_NO = 30000;
 

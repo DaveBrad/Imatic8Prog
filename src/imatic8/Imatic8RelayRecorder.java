@@ -103,19 +103,19 @@ class Imatic8RelayRecorder {
 
         switch (boardAction) {
             case RELAY_ON:
-                state = "ON";
+                state = Imatic8BoardIni.IMATIC8_INI_ON_STATE;
                 relayNum = relNumResponse;
                 break;
             case RELAY_OFF:
-                state = "off";
+                state = Imatic8BoardIni.IMATIC8_INI_OFF_STATE;
                 relayNum = relNumResponse;
                 break;
             case RELAY_ALL_ON:
-                state = "ON";
+                state = Imatic8BoardIni.IMATIC8_INI_ON_STATE;;
                 relayNum = -1;
                 break;
             case RELAY_ALL_OFF:
-                state = "off";
+                state = Imatic8BoardIni.IMATIC8_INI_OFF_STATE;
                 relayNum = -1;
                 break;
         }
@@ -135,13 +135,17 @@ class Imatic8RelayRecorder {
     void reportRelayStates() {
         Imatic8BoardIni propIni = this.boardData.propIni;
 
+        // get the board number for the status report
+        int brdN = this.boardData.getBoardNumber();
+
         // propertiesObject.list(System.out);
         // does not output in 1 to 8 order (that its random)
-        String lineOfStates = "Status:";
+        String lineOfStates = String.format("Status:b-%d:", brdN);
+
         for (int i = MIN_RELAY_NUMBER; i <= MAX_RELAY_NUMBER; i++) {
             String key = String.format("R%d", i);
             String c = propIni.getProperty(key)
-                    .equals("off") ? "-" : String.format("%d", i);
+                    .equals(Imatic8BoardIni.IMATIC8_INI_OFF_STATE) ? "-" : String.format("%d", i);
 
             lineOfStates = String.format("%s%s", lineOfStates, c);
         }

@@ -50,6 +50,12 @@ public class Imatic8BoardIni extends Properties {
 
     private final static String PROP_IP_STRING = "ip";
     private final static String PROP_PORT_STRING = "port";
+    
+      /** INI off state */
+    public static String IMATIC8_INI_OFF_STATE = "off";
+    
+      /** INI on state */
+    public static String IMATIC8_INI_ON_STATE = "on";
 
     private final Imatic8BoardData boardData;
 
@@ -134,7 +140,7 @@ public class Imatic8BoardIni extends Properties {
             // store the relay states 
             for (int i = MIN_RELAY_NUMBER; i <= MAX_RELAY_NUMBER; i++) {
                 this.setProperty(
-                        String.format("R%d", i), "OFF");// R1 R2 ......
+                        String.format("R%d", i), IMATIC8_INI_OFF_STATE);// R1 R2 ......
             }
             this.storeProperties();
         }

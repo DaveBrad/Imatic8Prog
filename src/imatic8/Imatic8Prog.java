@@ -361,23 +361,23 @@ public class Imatic8Prog {
 
     /** The help brief documentation. */
     private static final String[] helpDocLinesArr = new String[]{
-        "Usage: - Command-line mode ",
-        "    eg.    Imatic8Prog.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 3",
-        " or    - Interactive mode",
-        "    eg.    Imatic8Prog.jar",
-        "           I>on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 3",
+        "Usage: - Command-line mode   eg. Imatic8Prog.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 3",
+        " or    - Interactive mode    eg. Imatic8Prog.jar",
+        "                                 I>b-1 on 1 2 ms:500 on 3 b-2 on 1",
         "[args...]",
         "   help | -help | /? | ? | license | l   [ exit | quit | q   - interactive only -]",
         " - setup -",
-        "   defIP-N nnn.nnn.nnn.nnn         (define an IR address to associate",
-        "                                    with N used in b:N operation     )",
+        "   defIP-N nnn.nnn.nnn.nnn         ( define an IP address to associate",
+        "                                     with N used in b-N operation     )",
         " - operations -",
-        "   b-N                             (board N to operate on/off/status",
-        "   on n [n [n...]]] | on all       (on relays)",
-        "   off n [n [n...]]] | off all     (off relays)",
-        "   s:N | ms:N                      (pause N seconds/milliseconds)",
-        "   status                          ( 'Status:12--5---'                digit=ON      )",
-        "                                   (  > board has no query, so best guess status <  }"
+        "   b-N                             ( board N context of on/off/status",
+        "                                     defaults b-1 if no b-N in each arguments line  )",
+        "   on n [n [n...]]] | on all       ( on relays, b-1 if no preceding b-N )",
+        "   off n [n [n...]]] | off all     ( off relays, b-1 if no preceding b-N )",
+        "   s:N | ms:N                      ( pause N seconds/milliseconds )",
+        "   status                          ( 'Status:b-1:12--5---'    b-N=board-N  digit=ON",
+        "                                     b-1 if no preceding b-N",
+        "                                      > board has no query, so best guess status <  )"
     };
 
     /** Print the help information. */
