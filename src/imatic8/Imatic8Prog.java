@@ -29,6 +29,7 @@ package imatic8;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -70,8 +71,12 @@ import java.util.ArrayList;
  * </td>
  * <td style="background: #ffffcc;">
  * <pre>
- * Imatic8Prog.main(new String[](arg0, arg1, arg2........);&nbsp;
- * </pre>
+ Imatic8IoIf myMatic8 
+         = new Imatic8IoIf((new String[]{arg0, arg1, arg2.....);
+ myMatic8.runAsLib();
+ </pre>
+ * <p style="font-size: 0.85em;"> See <i>{@link imatic8.Imatic8IoIf}</i>        
+ * </p>
  * </td>
  * </tr></table>
  * <p>
@@ -175,11 +180,26 @@ import java.util.ArrayList;
  * </td>
  *
  * <td style="background: #ffffe6; vertical-align:top"><pre style="margin-bottom: 0px;">
- *defip-N nnn.nnn.nnn.nnn</pre>
+ * defip-N nnn.nnn.nnn.nnn</pre>
  * <div style="font-size: 0.75em; margin-left: 15px; margin-top: 6px;">'N' board
  * number&nbsp;&nbsp;&nbsp; 'nnn' 0-255 IPV4 number</div>
  * </td>
  * </tr>
+ * 
+ * <tr>
+ * <td style="background: #ffffe6; vertical-align:top; width: 17ch;">query defined<br>board all N</td>
+ * <td style="background: #ffffe6; vertical-align:top">
+ * <pre> <span style="color: green;">defip</span>
+ * </pre>
+ * </td>
+ *
+ * <td style="background: #ffffe6; vertical-align:top"><pre style="margin-bottom: 0px;">
+ *b-1 : 192.168.1.4:30000
+ *b-2 : 192.168.1.4:30000
+ *b-10 : 192.168.1.5:30000</pre>
+ * </td>
+ * </tr>
+ * 
  * <tr>
  * <td style="background: #ffffe6; vertical-align:top"></td>
  * <td style="background: #ffffe6; vertical-align:top" colspan="2">
@@ -201,8 +221,8 @@ import java.util.ArrayList;
  * IMPORTANT: if you wish to change a board-N IP address, delete the INI file
  * and then re-define.
  * <br>
- * <span style="color: magenta;">NOTE:</span> defip-1 192.168.1.8 overrides the default setting IP address
- * but needs to done before using Imatic8Prog.
+ * <span style="color: magenta;">NOTE:</span> defip-1 192.168.1.8 overrides the
+ * default setting IP address but needs to done before using Imatic8Prog.
  * </td>
  * </tr>
  * </table>
@@ -223,263 +243,10 @@ public class Imatic8Prog {
 
         if (args.length == 0) {
             // interactive mode
-            processInteractiveMode();
+            Im8ModeInteractive.processInteractiveMode();
         } else {
             // command line mode
-            //
-            // determine if help or define ip first
-            //
-            String arg0 = args[0].toLowerCase();
-
-            if (checkForHelpOrLicense(arg0)) {
-                System.exit(0);
-            }
-            if (processCheckForDefineIP(arg0, args)) {
-                System.exit(0);
-            }
-            // command mode operation
-            new Imatic8CommandLine().processCommandLineArgs(args);
-        }
-    }
-
-    /**
-     * Process with the input from console in interactive mode.
-     */
-    private static void processInteractiveMode() {
-        // interactive mode
-
-        // launch a window frame for processing the relays
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        ArrayList<String> tokenList = new ArrayList<>();
-
-        Imatic8CommandLine imaticCommandLine = new Imatic8CommandLine();
-
-        while (true) {
-            try {
-                // processing a line by line input until 'exit' is entered
-                System.out.printf("I>");
-                String readLn = reader.readLine();
-
-                // convert the input line into tokens which represent
-                // arguments
-                String[] tokenArr = readLn.split(" ");
-                tokenList.clear();
-
-                for (String s : tokenArr) {
-                    if (!s.isEmpty()) {
-                        tokenList.add(s);
-                    }
-                }
-                // change to an args String[] form
-                String[] argsArr = tokenList.toArray(new String[tokenList.size()]);
-
-                // have a basic tokenized, blank lines ignore
-                boolean noneOperationCmds = false;
-
-                if (!tokenList.isEmpty()) {
-                    String arg0 = tokenList.get(0).toLowerCase();
-
-                    checkForExit(arg0);
-                    // if we get a 
-                    noneOperationCmds |= checkForHelpOrLicense(arg0);
-                    noneOperationCmds |= processCheckForDefineIP(arg0, argsArr);
-                }
-                if (!noneOperationCmds) {
-
-                    imaticCommandLine.processCommandLineArgs(argsArr);
-                }
-
-            } catch (IOException ex) {
-                System.err.println("Unable to read from input/STDIN system.");
-                System.exit(-1);
-            }
-        } // while true loop
-    }
-
-    /**
-     * Check if an exit is provided in interactive mode and system exit
-     *
-     * @param arg0 string of lower-case argument 0
-     */
-    private static void checkForExit(String arg0) {
-        // check for each exit command type in the 0 argument
-        for (String exitStr : new String[]{"exit", "quit", "q"}) {
-            if (arg0.equals(exitStr)) {
-                System.exit(0); // user is quitting exit
-            }
-        }
-    }
-
-    /**
-     * Check if a help/license is provided and output
-     *
-     * @param arg0LC string of lower-case argument 0
-     *
-     * @return true if a help or license request
-     */
-    private static boolean checkForHelpOrLicense(String arg0LC) {
-        // check for each help/license command type in the 0 argument
-        for (String exitStr : new String[]{"help", "l", "-help", "/?", "?", "license"}) {
-            if (arg0LC.equals(exitStr)) {
-                if (arg0LC.startsWith("l")) {
-                    // user request license 
-                    licensePrint();
-                } else {
-                    // user request help (/? is tpyically windows, all others are 
-                    // Unix/Linux/Windows)
-                    helpPrint();
-                }
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean processCheckForDefineIP(String arg0LC, String... args) {
-        if (!arg0LC.startsWith("defip-")) {
-            // none operation command in the queue is false
-            return false;
-        }
-        // only two args are allowed
-        if (args.length != 2) {
-            System.err.printf("ERROR: defip-N has one argument following.\n", arg0LC);
-            return true; // this will be an error condition so stop proceeding forward
-        }
-        // have define IP address and board command
-        // 'defip-N nnn.nnn.nnn.nnn
-        //
-        // get the N
-        String[] splitArg0Arr = arg0LC.split("-");
-
-        if (splitArg0Arr.length != 2) {
-            System.err.printf("ERROR: not defip-N format, found '%s'\n", arg0LC);
-            return true; // this will be an error condition so stop proceeding forward
-        }
-        String nPart = splitArg0Arr[1];
-        int nBoard;
-        try {
-            nBoard = Integer.parseInt(nPart);
-
-        } catch (NumberFormatException ex) {
-            System.err.printf("ERROR: not defip-N format N not digit, found '%s': %s \n",
-                    arg0LC, ex.getMessage());
-            return true;
-        }
-        if (nBoard < 1) {
-            System.err.printf("ERROR: not defip-N format N needs to start at 1, found '%s'\n", arg0LC);
-            return true;
-        }
-        // the following parameter needs to be an IPV4 address string
-        String ipArg = args[1];
-
-        String[] ipArgArr = ipArg.split("\\.");
-
-        int ipLen = ipArgArr.length;
-        if (ipLen != 4) {
-            System.err.printf("ERROR: defip-N IP address not nnn.nnn.nnn.nnn (n.n.n.n) format\n", arg0LC);
-            return true; // this will be an error condition so stop proceeding forward
-        }
-        // 
-        boolean iperror = false;
-
-        for (int i = 0; i < ipLen; i++) {
-            // validate the string is an IPV4 address
-            try {
-                int value = Integer.parseInt(ipArgArr[i]);
-
-                if (value < 0 || value > 255) {
-                    System.err.printf("ERROR: defip-N IP field [%d] value not 0-255 error: %s\n", i, ipArgArr[i]);
-                    iperror = true;
-                }
-
-            } catch (NumberFormatException ex) {
-                System.err.printf("ERROR: defip-N IP field [%d] not number error: %s\n", i, ipArgArr[i]);
-                iperror = true;
-            }
-        }
-        // if an IP error occured then need to proceed
-        if (iperror) {
-            return true;
-        }
-        // create the INI file for the board and the IP address provided, as long
-        // as there is not an existing one
-        File boardsIniFile = Imatic8BoardIni.getBoardIniFile(nBoard);
-
-        if (boardsIniFile.exists()) {
-            System.err.printf("ERROR: defip-N: N %d already exists.\n"
-                    + "      Need to delete file manually to overwrite.\n       %s\n",
-                    nBoard,
-                    boardsIniFile.getAbsolutePath());
-            return true;
-        }
-        Imatic8BoardData definedBoardData = Imatic8BoardData.defineBoardObject(nBoard, ipArg);
-
-        new Imatic8BoardIni(definedBoardData).loadProperties();
-
-        // this was a success so continue
-        return true;
-    }
-
-    /** The help brief documentation. */
-    private static final String[] helpDocLinesArr = new String[]{
-        "Usage: - Command-line mode   eg. Imatic8Prog.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 3",
-        " or    - Interactive mode    eg. Imatic8Prog.jar",
-        "                                 I>b-1 on 1 2 ms:500 on 3 b-2 on 1",
-        "[args...]",
-        "   help | -help | /? | ? | license | l   [ exit | quit | q   - interactive only -]",
-        " - setup -",
-        "   defIP-N nnn.nnn.nnn.nnn         ( define an IP address to associate",
-        "                                     with N used in b-N operation     )",
-        " - operations -",
-        "   b-N                             ( board N context of on/off/status",
-        "                                     defaults b-1 if no b-N in each arguments line  )",
-        "   on n [n [n...]]] | on all       ( on relays, b-1 if no preceding b-N )",
-        "   off n [n [n...]]] | off all     ( off relays, b-1 if no preceding b-N )",
-        "   s:N | ms:N                      ( pause N seconds/milliseconds )",
-        "   status                          ( 'Status:b-1:12--5---'    b-N=board-N  digit=ON",
-        "                                     b-1 if no preceding b-N",
-        "                                      > board has no query, so best guess status <  )"
-    };
-
-    /** Print the help information. */
-    private static void helpPrint() {
-        for (String s : helpDocLinesArr) {
-            System.out.println(s);
-        }
-    }
-
-    private static final String[] licenseTxtArr = new String[]{
-        "Copyright (c) 2017 dbradley.",
-        "",
-        " License: Imatic8Prog",
-        "",
-        " Free to use software and associated documentation (the \"Software\")",
-        " without charge.",
-        "",
-        " Distribution, merge into other programs, copy of the software is",
-        " permitted with the following a) to c) conditions:",
-        "",
-        " a) Software is provided as-is and without warranty of any kind. The user is",
-        " responsible to ensure the \"Software\" fits their needs. In no event shall the",
-        " author(s) or copyholder be liable for any claim, damages or other liability",
-        " in connection with the \"Software\".",
-        "",
-        " b) Permission is hereby granted to modify the \"Software\" with sub-conditions:",
-        " b.1) A 'Copyright (c) <year> <copyright-holder>.' is added above the original",
-        " copyright line(s).",
-        " b.2) The Main class name is changed to identify a different \"program\" name",
-        " from the original.",
-        "",
-        " c) The above copyright notice and this permission and license notice shall",
-        " be included in all copies or substantial portions of the \"Software\"."
-    };
-
-    /**
-     * Print the license information.
-     */
-    private static void licensePrint() {
-        for (String s : licenseTxtArr) {
-            System.out.println(s);
+            Im8ModeCmdLine.processCmdLineMode(args);
         }
     }
 }

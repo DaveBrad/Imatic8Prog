@@ -27,30 +27,30 @@
  */
 package imatic8;
 
-import static imatic8.Imatic8Constants.MAX_RELAY_NUMBER;
-import static imatic8.Imatic8Constants.MIN_RELAY_NUMBER;
-import static imatic8.Imatic8Constants.RELAY_ALL_OFF_CODE;
-import static imatic8.Imatic8Constants.RELAY_ALL_ON_CODE;
-import static imatic8.Imatic8Constants.RELAY_OFF_CODE;
-import static imatic8.Imatic8Constants.RELAY_ON_CODE;
-import static imatic8.Imatic8Constants.RESPONSE_RELAY_NUMBER_BYTE_INDEX;
-import static imatic8.Imatic8Constants.RESPONSE_ON_OFF_STATE_BYTE_INDEX;
+import static imatic8.Im8Constants.MAX_RELAY_NUMBER;
+import static imatic8.Im8Constants.MIN_RELAY_NUMBER;
+import static imatic8.Im8Constants.RELAY_ALL_OFF_CODE;
+import static imatic8.Im8Constants.RELAY_ALL_ON_CODE;
+import static imatic8.Im8Constants.RELAY_OFF_CODE;
+import static imatic8.Im8Constants.RELAY_ON_CODE;
+import static imatic8.Im8Constants.RESPONSE_RELAY_NUMBER_BYTE_INDEX;
+import static imatic8.Im8Constants.RESPONSE_ON_OFF_STATE_BYTE_INDEX;
 
 /**
  * Class that keeps a record of the relay settings.
  *
  * @author dbradley
  */
-class Imatic8RelayRecorder {
+class Im8RelayRecorder {
 
-    private final Imatic8BoardData boardData;
+    private final Im8BoardData boardData;
 
     /**
      * Create the Imatic8 recorder for the relay states. This only represents
      * the state as per command/argument request and not the actual board. The
      * board does not support a relay state query.
      */
-    Imatic8RelayRecorder(Imatic8BoardData boardData) {
+    Im8RelayRecorder(Im8BoardData boardData) {
         this.boardData = boardData;
     }
 
@@ -61,21 +61,21 @@ class Imatic8RelayRecorder {
      *
      * @return the response type which should match
      */
-    private Imatic8RelayInfo getActionCodeFromResponse(byte responseByte) {
-        Imatic8RelayInfo brdAction = null;
+    private Im8RelayInfo getActionCodeFromResponse(byte responseByte) {
+        Im8RelayInfo brdAction = null;
 
         switch (responseByte) {
             case RELAY_ON_CODE:
-                brdAction = Imatic8RelayInfo.RELAY_ON;
+                brdAction = Im8RelayInfo.RELAY_ON;
                 break;
             case RELAY_OFF_CODE:
-                brdAction = Imatic8RelayInfo.RELAY_OFF;
+                brdAction = Im8RelayInfo.RELAY_OFF;
                 break;
             case RELAY_ALL_ON_CODE:
-                brdAction = Imatic8RelayInfo.RELAY_ALL_ON;
+                brdAction = Im8RelayInfo.RELAY_ALL_ON;
                 break;
             case RELAY_ALL_OFF_CODE:
-                brdAction = Imatic8RelayInfo.RELAY_ALL_OFF;
+                brdAction = Im8RelayInfo.RELAY_ALL_OFF;
                 break;
             default:
             // nothing can be done
@@ -88,9 +88,11 @@ class Imatic8RelayRecorder {
      *
      * @param boardResponseByteArr response bytes from an operation request to a
      *                             board
+     * 
+     * @return true if successful, otherwise false
      */
-    void setRelayRecord(byte[] boardResponseByteArr) {
-        Imatic8BoardIni propIni = this.boardData.propIni;
+    boolean setRelayRecord(byte[] boardResponseByteArr) {
+        Im8BoardIni propIni = this.boardData.propIni;
 
         // successful action as a response received
         byte relNumResponse = boardResponseByteArr[RESPONSE_RELAY_NUMBER_BYTE_INDEX];
@@ -99,23 +101,23 @@ class Imatic8RelayRecorder {
         String state = "???";
         int relayNum = -1;
 
-        Imatic8RelayInfo boardAction = getActionCodeFromResponse(relOnOffResponse);
+        Im8RelayInfo boardAction = getActionCodeFromResponse(relOnOffResponse);
 
         switch (boardAction) {
             case RELAY_ON:
-                state = Imatic8BoardIni.IMATIC8_INI_ON_STATE;
+                state = Im8BoardIni.IMATIC8_INI_ON_STATE;
                 relayNum = relNumResponse;
                 break;
             case RELAY_OFF:
-                state = Imatic8BoardIni.IMATIC8_INI_OFF_STATE;
+                state = Im8BoardIni.IMATIC8_INI_OFF_STATE;
                 relayNum = relNumResponse;
                 break;
             case RELAY_ALL_ON:
-                state = Imatic8BoardIni.IMATIC8_INI_ON_STATE;;
+                state = Im8BoardIni.IMATIC8_INI_ON_STATE;;
                 relayNum = -1;
                 break;
             case RELAY_ALL_OFF:
-                state = Imatic8BoardIni.IMATIC8_INI_OFF_STATE;
+                state = Im8BoardIni.IMATIC8_INI_OFF_STATE;
                 relayNum = -1;
                 break;
         }
@@ -128,12 +130,14 @@ class Imatic8RelayRecorder {
             propIni.setProperty(String.format("R%d", relayNum), state);
         }
         // store the properties
-        propIni.storeProperties();
+        return propIni.storeProperties();
     }
 
-    /** Report the relay states (best guess) from the INI file. */
+    /** 
+     * Report the relay states (best guess) from the INI file. 
+     */
     void reportRelayStates() {
-        Imatic8BoardIni propIni = this.boardData.propIni;
+        Im8BoardIni boardIni = this.boardData.propIni;
 
         // get the board number for the status report
         int brdN = this.boardData.getBoardNumber();
@@ -144,11 +148,11 @@ class Imatic8RelayRecorder {
 
         for (int i = MIN_RELAY_NUMBER; i <= MAX_RELAY_NUMBER; i++) {
             String key = String.format("R%d", i);
-            String c = propIni.getProperty(key)
-                    .equals(Imatic8BoardIni.IMATIC8_INI_OFF_STATE) ? "-" : String.format("%d", i);
+            String c = boardIni.getProperty(key)
+                    .equals(Im8BoardIni.IMATIC8_INI_OFF_STATE) ? "-" : String.format("%d", i);
 
             lineOfStates = String.format("%s%s", lineOfStates, c);
         }
-        System.out.printf("%s\n", lineOfStates);
+        this.boardData.m8Io.out(0).sprintf("%s\n", lineOfStates);
     }
 }

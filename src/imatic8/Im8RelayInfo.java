@@ -27,14 +27,14 @@
  */
 package imatic8;
 
-import static imatic8.Imatic8Constants.RELAY_ALL_NUMBER;
-import static imatic8.Imatic8Constants.RELAY_ALL_OFF_CODE;
-import static imatic8.Imatic8Constants.RELAY_ALL_ON_CODE;
-import static imatic8.Imatic8Constants.RELAY_OFF_CODE;
-import static imatic8.Imatic8Constants.RELAY_ON_CODE;
-import static imatic8.Imatic8Constants.RELAY_NUMBER_BYTE_INDEX;
-import static imatic8.Imatic8Constants.ON_OFF_STATE_BYTE_INDEX;
-import static imatic8.Imatic8Constants.RELAY_MSG_ARRAY;
+import static imatic8.Im8Constants.RELAY_ALL_NUMBER;
+import static imatic8.Im8Constants.RELAY_ALL_OFF_CODE;
+import static imatic8.Im8Constants.RELAY_ALL_ON_CODE;
+import static imatic8.Im8Constants.RELAY_OFF_CODE;
+import static imatic8.Im8Constants.RELAY_ON_CODE;
+import static imatic8.Im8Constants.RELAY_NUMBER_BYTE_INDEX;
+import static imatic8.Im8Constants.ON_OFF_STATE_BYTE_INDEX;
+import static imatic8.Im8Constants.RELAY_MSG_ARRAY;
 
 /**
  * Enum that represents operations information to send to the Imatic8 board
@@ -42,7 +42,7 @@ import static imatic8.Imatic8Constants.RELAY_MSG_ARRAY;
  * 
  * @author dbradley
  */
- enum Imatic8RelayInfo {
+ enum Im8RelayInfo {
 
     RELAY_ON,
     RELAY_OFF,

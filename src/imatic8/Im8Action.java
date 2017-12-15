@@ -27,10 +27,10 @@
  */
 package imatic8;
 
-import static imatic8.Imatic8RelayInfo.RELAY_ALL_OFF;
-import static imatic8.Imatic8RelayInfo.RELAY_ALL_ON;
-import static imatic8.Imatic8RelayInfo.RELAY_OFF;
-import static imatic8.Imatic8RelayInfo.RELAY_ON;
+import static imatic8.Im8RelayInfo.RELAY_ALL_OFF;
+import static imatic8.Im8RelayInfo.RELAY_ALL_ON;
+import static imatic8.Im8RelayInfo.RELAY_OFF;
+import static imatic8.Im8RelayInfo.RELAY_ON;
 
 /**
  * Class to perform an action with the board, basically connect, send-message,
@@ -39,9 +39,9 @@ import static imatic8.Imatic8RelayInfo.RELAY_ON;
  *
  * @author dbradley
  */
-class Imatic8Action {
+class Im8Action {
 
-    private Imatic8BoardData boardController = null;
+    private Im8BoardData boardController = null;
 
     /**
      * Board being controlled on.
@@ -49,21 +49,21 @@ class Imatic8Action {
     private int boardN;
 
     /** ON or OFF action */
-    Imatic8CommandLine.ArgType action;
+    Im8ProcessArgs.ArgType action;
 
     /** 1-8 or -1 for ALL, or the pause time value in seconds */
     int valueForAction;
 
-    Imatic8Action(int boardN, Imatic8CommandLine.ArgType action, int valueForAction) {
+    Im8Io m8Io;
+
+    Im8Action(Im8Io m8Io, int boardN, Im8ProcessArgs.ArgType action, int valueForAction) {
         this.boardN = boardN;
         this.action = action;
         this.valueForAction = valueForAction;
+        this.m8Io = m8Io;
 
         // the board controller object have already been set up so
-        if (!Imatic8BoardData.boardNDataHash.containsKey(boardN)) {
-            Imatic8BoardData.createBoardNFromINI(boardN);
-        }
-        this.boardController = Imatic8BoardData.boardNDataHash.get(boardN);
+        this.boardController = Im8BoardData.createReuseBoardNFromINI(m8Io, boardN);
     }
 
     /**
@@ -77,7 +77,7 @@ class Imatic8Action {
     byte[] setRelayOn(boolean closeConnectionOnCompletion) {
         int relayNumber = this.valueForAction;
 
-        Imatic8RelayInfo actionL;
+        Im8RelayInfo actionL;
         if (relayNumber == -1) {
             actionL = RELAY_ALL_ON;
         } else {
@@ -98,7 +98,7 @@ class Imatic8Action {
     byte[] setRelayOff(boolean closeConnectionOnCompletion) {
         int relayNumber = this.valueForAction;
 
-        Imatic8RelayInfo actionL;
+        Im8RelayInfo actionL;
         if (relayNumber == -1) {
             actionL = RELAY_ALL_OFF;
         } else {

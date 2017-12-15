@@ -27,31 +27,34 @@
  */
 package imatic8;
 
-import static imatic8.Imatic8CommandLine.ArgType.ERROR_ARGUMENT;
-import static imatic8.Imatic8CommandLine.ArgType.MS;
-import static imatic8.Imatic8CommandLine.ArgType.RELAY_NUMBER;
-import static imatic8.Imatic8CommandLine.ArgType.STATUS;
-import static imatic8.Imatic8Constants.MAX_RELAY_NUMBER;
-import static imatic8.Imatic8Constants.MIN_RELAY_NUMBER;
+import static imatic8.Im8ProcessArgs.ArgType.ERROR_ARGUMENT;
+import static imatic8.Im8ProcessArgs.ArgType.MS;
+import static imatic8.Im8ProcessArgs.ArgType.RELAY_NUMBER;
+import static imatic8.Im8ProcessArgs.ArgType.STATUS;
+import static imatic8.Im8Constants.MAX_RELAY_NUMBER;
+import static imatic8.Im8Constants.MIN_RELAY_NUMBER;
+import static imatic8.Im8Io.ErrorKind.CRITICAL;
+import static imatic8.Im8Io.ErrorKind.ERROR_ARG;
 import java.io.File;
 import java.util.ArrayList;
 
 /**
- * Class to process the command line arguments.
+ * Class to process the arguments for all modes (command-line, interactive and
+ * library).
  * <p>
- * This is used by command-mode and interactive-mode and will remove unwanted
- * token delimiters first, then validate (producing errors if needed), then
- * storing the operations into an array for action once validated.
+ * This is used by all modes and will remove unwanted token delimiters first,
+ * then validate (producing errors if needed), then storing the operations into
+ * an array for action once validated.
  *
  * @author dbradley
  */
-class Imatic8CommandLine {
+class Im8ProcessArgs {
 
     /**
      * The command-line argument array list of operations to perform in sequence
      * (as provided) once arguments are validated.
      */
-    private final ArrayList<Imatic8Action> operationsList = new ArrayList<>();
+    private final ArrayList<Im8Action> operationsList = new ArrayList<>();
 
     /**
      * The arguments that are represented as data units. These units may be
@@ -68,8 +71,7 @@ class Imatic8CommandLine {
          * are converted to milliseconds on processing.
          */
         MS,
-        /** action is to ALL relays (on
-         * or off */
+        /** action is to ALL relays (on or off */
         ALL,
         /** relay number to action upon */
         RELAY_NUMBER,
@@ -77,11 +79,20 @@ class Imatic8CommandLine {
         STATUS,
         /** none
          * of the above is being processed, so there is an error */
-        ERROR_ARGUMENT
+        ERROR_ARGUMENT,
+        /**
+         * there was an error found processing the N value for a b-N argument
+         */
+        ERROR_BOARD_N,
+        //99
+        ERROR_MS_OR_S_N,
+        ERROR_RELAY_N
     }
 
-    Imatic8CommandLine() {
-        //  
+    Im8Io m8Io;
+
+    Im8ProcessArgs(Im8Io m8IoP) {
+        this.m8Io = m8IoP;
     }
 
     /**
@@ -90,7 +101,7 @@ class Imatic8CommandLine {
      *
      * @param args String array of the arguments.
      */
-    void processCommandLineArgs(String[] args) {
+    void doProcessArgs(String[] args) {
         operationsList.clear();
 
         // the board that is being operated upon may be changed
@@ -110,25 +121,31 @@ class Imatic8CommandLine {
 
         boolean timerIntroduced = false;
 
-        boolean firstArgRead = false;
+        boolean onOrOffSet = false;
         boolean errorFound = false;
 
         for (String argI : args) {
             // the first time an ON or OFF is needed
-            ArgType type = processArgType(firstArgRead, argI);
+            ArgType type = processArgType(onOrOffSet, argI);
 
             switch (type) {
                 case ERROR_ARGUMENT:
+                    this.m8Io.err(-1).sprintf(CRITICAL, ": argument unknown/singular '%s'.\n", argI);
+                    errorFound = true;
+                    break;
+                case ERROR_RELAY_N:
+                case ERROR_MS_OR_S_N:
+                case ERROR_BOARD_N:
+                    errorFound = true;
+                    break;
+
                 case RELAY_NUMBER:
-                    if (!firstArgRead) {
-                        // critical error
-                        System.err.printf("CRITICAL: missing argument to be 'on | off' for %s.\n", argI);
-                        return;
-                    }
+
                     // if a timer has been introduce then it has to be 
                     // explicitly overridden
                     if (timerIntroduced) {
-                        System.err.printf("ERROR: Timer has preceded a relay number, not allowed: %s\n", argI);
+                        this.m8Io.err(-2).sprintf(ERROR_ARG,
+                                "Timer has preceded a relay number, not allowed: %s\n", argI);
                     } else {
                         // process the remain stuff
 
@@ -136,9 +153,9 @@ class Imatic8CommandLine {
                             if (!errorFound) {
                                 // process the set-relay-action
                                 ArgType actionType = operateOn ? ArgType.ON : ArgType.OFF;
-                                int relayNum = processNargument(argI);
+                                int relayNum = processArgRelayN(onOrOffSet, argI);
 
-                                operationsList.add(new Imatic8Action(activeBoardN, actionType, relayNum));
+                                operationsList.add(new Im8Action(m8Io, activeBoardN, actionType, relayNum));
                             }
                         } else {
                             // 
@@ -152,29 +169,29 @@ class Imatic8CommandLine {
                     if (!errorFound) {
                         // process the set-relay-action for all
                         ArgType actionType = operateOn ? ArgType.ON : ArgType.OFF;
-                        operationsList.add(new Imatic8Action(activeBoardN, actionType, -1));
+                        operationsList.add(new Im8Action(m8Io, activeBoardN, actionType, -1));
                     }
                     break;
                 case MS:
-                    firstArgRead = false;
+                    onOrOffSet = false;
 
                     timerIntroduced = true;
                     // this is a timer action so store it away
                     if (!errorFound) {
                         // process a timer/pause/delay action
-                        int timerInMs = processTimerArgument(argI);
-                        operationsList.add(new Imatic8Action(activeBoardN, MS, timerInMs));
+                        int timerInMs = processArgTimer(argI);
+                        operationsList.add(new Im8Action(m8Io, activeBoardN, MS, timerInMs));
                     }
                     break;
                 case STATUS:
-                    firstArgRead = false;
+                    onOrOffSet = false;
                     if (!errorFound) {
-                        operationsList.add(new Imatic8Action(activeBoardN, STATUS, 0));
+                        operationsList.add(new Im8Action(m8Io, activeBoardN, STATUS, 0));
                     }
                     break;
                 case ON:
                     // this is a setting rather than an action
-                    firstArgRead = true;
+                    onOrOffSet = true;
 
                     timerIntroduced = false;
                     operateOn = true;
@@ -182,7 +199,7 @@ class Imatic8CommandLine {
                     break;
                 case OFF:
                     // this is a setting rather than an action
-                    firstArgRead = true;
+                    onOrOffSet = true;
 
                     timerIntroduced = false;
                     operateOn = false;
@@ -192,17 +209,17 @@ class Imatic8CommandLine {
                     // this is a setting rather than an action
                     //
                     //99 need to deal with bad board number
-                    firstArgRead = true;
+                    onOrOffSet = false;
 
-                    activeBoardN = processBoardArgument(argI);
+                    activeBoardN = processArgBoardN(argI);
 
                     // need to load the board so active board actions
                     // may be processed
                     if (activeBoardN > 0) {
-                        if (!Imatic8BoardData.loadBoardObject(activeBoardN)) {
+                        if (!Im8BoardData.loadBoardObject(m8Io, activeBoardN)) {
                             errorFound = true;
-                            System.err.printf("ERROR: Board %d not defined: %s\n",
-                                    activeBoardN, argI);
+                            m8Io.err(-2).sprintf(ERROR_ARG,
+                                    "Board %d not defined: %s\n", activeBoardN, argI);
                         }
                     }
                     break;
@@ -225,7 +242,7 @@ class Imatic8CommandLine {
         int lastItem = lengthOfActionsToDo - 1;
         for (int i = 0; i < lengthOfActionsToDo; i++) {
 
-            Imatic8Action imaticAction = this.operationsList.get(i);
+            Im8Action imaticAction = this.operationsList.get(i);
 
             boolean closeConnectionOnLastItem = (i == lastItem);
             switch (imaticAction.action) {
@@ -263,13 +280,13 @@ class Imatic8CommandLine {
      * Process argument(s) one-by-one through this process which will determine
      * the type of argument it is, as part of the validation process.
      *
-     * @param firstOnOrOffArgRead relay-argument types cannot come before a on
-     *                            or off argument
-     * @param arg                 string of the argument to process
+     * @param onOrOffSet relay-argument types cannot come before a on or off
+     *                   argument
+     * @param arg        string of the argument to process
      *
      * @return ArgType the type of the argument
      */
-    private ArgType processArgType(boolean firstOnOrOffArgRead, String arg) {
+    private ArgType processArgType(boolean onOrOffSet, String arg) {
 
         switch (arg.toLowerCase()) {
             case "on":
@@ -285,31 +302,30 @@ class Imatic8CommandLine {
                 // one of 'b-', 's:', 'ms:' or 'N' for a relay number
                 // that associates with a 'on'/'off' action'
                 //
-                int boardNValue = processBoardArgument(arg);
+                int boardNValue = processArgBoardN(arg);
                 if (boardNValue > 0) {
                     return ArgType.BOARD;
+                } else if (boardNValue < 0) {
+                    return ArgType.ERROR_BOARD_N;
                 }
                 // not a boardN value, check timer or relay
-                if (boardNValue == 0) {
-                    // check for timer
-                    int timerValue = processTimerArgument(arg);
+                int timerValue = processArgTimer(arg);
 
-                    if (timerValue > 0) {
-                        return ArgType.MS;
-                    }
-                    // not a boardN/timer check for a relay N argument
-                    if (timerValue == 0) {
-                        // but only if the on or off has been read
-                        if (firstOnOrOffArgRead) {
-                            // expect a number for the relay to operate
-                            int relayNum = processNargument(arg);
-                            if (relayNum != -1) {
-                                return ArgType.RELAY_NUMBER;
-                            }
-                        }
-                    }
+                if (timerValue > 0) {
+                    return ArgType.MS;
+                } else if (timerValue < 0) {
+                    return ArgType.ERROR_MS_OR_S_N;
                 }
-            // timer or relay-number check proved to be in error
+                // not a boardN/timer check for a relay N argument
+                // 
+                // expect a number for the relay to operate
+                int relayNum = processArgRelayN(onOrOffSet, arg);
+
+                if (relayNum > 0) {
+                    return ArgType.RELAY_NUMBER;
+                } else if (relayNum == -1) {
+                    return ArgType.ERROR_RELAY_N;
+                }
 
         }
         return ArgType.ERROR_ARGUMENT;
@@ -322,20 +338,28 @@ class Imatic8CommandLine {
      *
      * @return 1-8 relay number, -1 bad argument not number
      */
-    private int processNargument(String argP) {
+    private int processArgRelayN(boolean onOrOffSet, String argP) {
+        if (!onOrOffSet) {
+            // critical error
+            this.m8Io.err(-1).sprintf(ERROR_ARG,
+                    "no ON or OFF prior to relay number set: '%s'.\n", argP);
+            return -1;
+        }
         String arg = argP.toLowerCase();
         try {
             int value = Integer.parseInt(arg);
 
             if (value < MIN_RELAY_NUMBER || value > MAX_RELAY_NUMBER) {
-                System.err.printf("ERROR: relay number is not in range %d-%d: %s\n",
+                this.m8Io.err(-1).sprintf(ERROR_ARG,
+                        "relay number is not in range %d-%d: %s\n",
                         MIN_RELAY_NUMBER, MAX_RELAY_NUMBER, arg);
             } else {
                 return value;
             }
 
         } catch (NumberFormatException nfe) {
-            System.err.printf("ERROR: relay number %s: %s\n", nfe.getMessage(), arg);
+            this.m8Io.err(-1).sprintf(ERROR_ARG,
+                    "relay number %s: %s\n", nfe.getMessage(), arg);
         }
         return -1;
     }
@@ -347,7 +371,7 @@ class Imatic8CommandLine {
      *
      * @return > 0 a timer value, 0 not a timer string, -1 error detected
      */
-    private int processTimerArgument(String argP) {
+    private int processArgTimer(String argP) {
         String arg = argP.toLowerCase();
 
         // this can be a relay number or a timer setting
@@ -373,7 +397,8 @@ class Imatic8CommandLine {
             int timerValue = Integer.parseInt(convertSeconds);
 
             if (timerValue == 0) {
-                System.err.printf("ERROR: timer value of zero(0) makes no sense: %s\n", arg);
+                this.m8Io.err(-1).sprintf(ERROR_ARG,
+                        "timer value of zero(0) makes no sense: %s\n", arg);
             } else {
                 // there is no limit on the setting, but convert seconds to
                 // a milliseconds
@@ -384,7 +409,8 @@ class Imatic8CommandLine {
             }
 
         } catch (NumberFormatException nfe) {
-            System.err.printf("ERROR: timer value conversion: %s: %s\n", nfe.getMessage(), arg);
+            this.m8Io.err(-1).sprintf(ERROR_ARG,
+                    "timer value conversion: %s: %s\n", nfe.getMessage(), arg);
         }
         return -1;
     }
@@ -396,7 +422,7 @@ class Imatic8CommandLine {
      *
      * @return > 0 a board value, -1 error detected
      */
-    private int processBoardArgument(String argP) {
+    private int processArgBoardN(String argP) {
         String arg = argP.toLowerCase();
 
         // this can be a relay number or a timer setting
@@ -419,7 +445,7 @@ class Imatic8CommandLine {
                 // need to check that there is an INI file for this
                 // board number, otherwise it is an error
 
-                File ini4Board = Imatic8BoardIni.getBoardIniFile(boardValue);
+                File ini4Board = Im8BoardIni.getBoardIniFile(boardValue);
 
                 if (ini4Board.isFile()) {
                     return boardValue;
@@ -428,18 +454,24 @@ class Imatic8CommandLine {
                 // create the file, OTHERWISE this is an error
                 if (boardValue == 1) {
                     // create the board1 INI file
-                    Imatic8BoardData board1 = Imatic8BoardData.defineBoardObject(1, Imatic8Constants.IMATIC8_IP_ADDR);
-                    return 1;
-                }
-                System.err.printf("ERROR: no INI file for board %d, need to use 'defip-%d n.n.n.n' to define.\n",
-                        boardValue, boardValue);
+                    Im8BoardIni.defineDefaultBoard1(this.m8Io);
 
+                    if (this.m8Io.getExitCode() == 0) {
+                        return 1;
+                    }
+                } else {
+                    this.m8Io.err(-1).sprintf(ERROR_ARG,
+                            "no INI file for board %d, need to use 'defip-%d n.n.n.n' to define.\n",
+                            boardValue, boardValue);
+                }
             } else {
-                System.err.printf("ERROR: board value should be greater than 0: %s\n", arg);
+                this.m8Io.err(-1).sprintf(ERROR_ARG,
+                        "board value should be greater than 0: %s\n", arg);
             }
 
         } catch (NumberFormatException nfe) {
-            System.err.printf("ERROR: board value conversion: %s: %s\n", nfe.getMessage(), arg);
+            this.m8Io.err(-1).sprintf(ERROR_ARG,
+                    "board value conversion: %s: %s\n", nfe.getMessage(), arg);
         }
         return -1;
     }

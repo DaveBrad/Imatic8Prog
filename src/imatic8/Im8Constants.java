@@ -35,19 +35,14 @@ package imatic8;
  *
  * @author dbradley
  */
-class Imatic8Constants {
+class Im8Constants {
 
     /** 1 */
     static int MIN_RELAY_NUMBER = 1;
     /** 8 */
     static int MAX_RELAY_NUMBER = 8;
 
-    /** IP address default */
-    static String IMATIC8_IP_ADDR = "192.168.1.4";
-
-    /** Imatic8 port number */
-    static int IMATIC8_PORT_NO = 30000;
-
+  
     /** Connection send/receive timeout */
     static final int TIMEOUT_FOR_CONNECTION_SETUP = 2000;
 

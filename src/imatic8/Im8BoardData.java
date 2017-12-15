@@ -27,6 +27,9 @@
  */
 package imatic8;
 
+import imatic8.Im8Io.ErrorKind;
+import static imatic8.Im8Io.ErrorKind.ERROR_RT_IO;
+import static imatic8.Im8Io.errorMsg;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -39,19 +42,21 @@ import java.util.HashMap;
  *
  * @author dbradley
  */
-class Imatic8BoardData {
+class Im8BoardData {
 
-    final static HashMap<Integer, Imatic8BoardData> boardNDataHash = new HashMap<>();
+    private final static HashMap<Integer, Im8BoardData> boardNDataHash = new HashMap<>();
 
-    private int boardNumber;
+    private int boardN;
     private String boardIpAddr;
-    private int portNo;
+    private int boardPortNo;
 
     private Socket socket4Client;
 
-    private Imatic8RelayRecorder recorder;
+    private Im8RelayRecorder recorder;
 
-    Imatic8BoardIni propIni;
+    Im8Io m8Io;
+
+    Im8BoardIni propIni;
 
     /**
      * A board is a real-world object.
@@ -61,14 +66,28 @@ class Imatic8BoardData {
      * @return the board object, null if there is no board INI file and thus
      * needs to be created
      */
-    static Imatic8BoardData createBoardNFromINI(int boardNumberP) {
+    static Im8BoardData createReuseBoardNFromINI(Im8Io m8IoP, int boardNumberP) {
+        if (boardNDataHash.containsKey(boardNumberP)) {
+
+            // modify the m8Io setting as it is different for reuse
+            Im8BoardData nuBoardData = boardNDataHash.get(boardNumberP);
+            nuBoardData.m8Io = m8IoP;
+
+            return nuBoardData;
+        } else {
+            // the board has not been defined so likely also not
+            // have a default board-1 INI setup either
+            if (boardNumberP == 1) {
+                Im8BoardIni.defineDefaultBoard1(m8IoP);
+            }
+        }
         // an INI file needs to exist for a board object to be created
-        Imatic8BoardData nuBoarddata = new Imatic8BoardData(boardNumberP);
+        Im8BoardData nuBoarddata = new Im8BoardData(m8IoP, boardNumberP);
 
-        nuBoarddata.boardNumber = boardNumberP;
-        nuBoarddata.portNo = 30000;
+        nuBoarddata.boardN = boardNumberP;
+        nuBoarddata.boardPortNo = 30000;
 
-        nuBoarddata.propIni = new Imatic8BoardIni(nuBoarddata);
+        nuBoarddata.propIni = new Im8BoardIni(m8IoP, boardNumberP);
 
         // get the IP address for the board from the INI file
         nuBoarddata.boardIpAddr = nuBoarddata.propIni.getIpAddrStr();
@@ -76,17 +95,17 @@ class Imatic8BoardData {
         return nuBoarddata;
     }
 
-    static Imatic8BoardData defineBoardObject(int boardNumberP, String boardIpAddrP) {
+    static Im8BoardData defineBoardObject(Im8Io m8Io, int boardNumberP, String boardIpAddrP) {
         // it is known that a file does not exist, so it needs to be
         // created
-        Imatic8BoardData nuBoarddata = new Imatic8BoardData(boardNumberP);
+        Im8BoardData nuBoarddata = new Im8BoardData(m8Io, boardNumberP);
 
-        nuBoarddata.boardNumber = boardNumberP;
+        nuBoarddata.boardN = boardNumberP;
         nuBoarddata.boardIpAddr = boardIpAddrP;
-        nuBoarddata.portNo = 30000;
+        nuBoarddata.boardPortNo = 30000;
 
-        nuBoarddata.recorder = new Imatic8RelayRecorder(nuBoarddata);
-        nuBoarddata.propIni = new Imatic8BoardIni(nuBoarddata);
+        nuBoarddata.recorder = new Im8RelayRecorder(nuBoarddata);
+        nuBoarddata.propIni = new Im8BoardIni(m8Io, nuBoarddata.getBoardNumber());
 
         // load properties will create the INI file if it does not exist
         nuBoarddata.propIni.loadProperties();
@@ -94,42 +113,78 @@ class Imatic8BoardData {
         return nuBoarddata;
     }
 
-    static boolean loadBoardObject(int boardNumberP) {
+    static boolean loadBoardObject(Im8Io m8IoP, int boardNumberP) {
         if (!boardNDataHash.containsKey(boardNumberP)) {
             // the board data object has not been loaded, so load it
-            Imatic8BoardData nuBoarddata = createBoardNFromINI(boardNumberP);
+            Im8BoardData nuBoardData = createReuseBoardNFromINI(m8IoP, boardNumberP);
 
-            if (nuBoarddata == null) {
+            if (nuBoardData == null) {
                 return false;
             }
+        } else {
+            // modify the m8Io setting as it is different
+            Im8BoardData nuBoardData = boardNDataHash.get(boardNumberP);
+            nuBoardData.m8Io = m8IoP;
         }
         return true; //  means exists
     }
 
+    /**
+     * Create a board data object for board N.
+     *
+     * @param m8IoP        the IO object when processing messages
+     * @param boardNumberP N board number
+     */
     @SuppressWarnings("LeakingThisInConstructor")
-    private Imatic8BoardData(int boardNumberP) {
+    private Im8BoardData(Im8Io m8IoP, int boardNumberP) {
         //
+        this.m8Io = m8IoP;
         boardNDataHash.put(boardNumberP, this);
-        this.recorder = new Imatic8RelayRecorder(this);
+        this.recorder = new Im8RelayRecorder(this);
     }
 
+    /**
+     * Get the board number.
+     *
+     * @return integer board N value
+     */
     int getBoardNumber() {
-        return this.boardNumber;
+        return this.boardN;
     }
 
-    String getIpAddr() {
+    /**
+     * Get the IPV4 address string for board N.
+     *
+     * @return string of IPV4 address
+     */
+    String getIpV4Addr() {
         return this.boardIpAddr;
     }
 
+    /**
+     * Get the port number for board N as a string.
+     *
+     * @return string of a port number
+     */
     String getPortString() {
-        return String.format("%d", this.portNo);
+        return String.format("%d", this.boardPortNo);
     }
 
+    /**
+     * Get the port number for board N as an integer.
+     *
+     * @return integer of a port number
+     */
     int getPortNo() {
-        return this.portNo;
+        return this.boardPortNo;
     }
 
-    Socket openCommunication() {
+    /**
+     * Open the communication socket to board N if the socket is already closed.
+     *
+     * @return Socket if open, null if an error occurs
+     */
+    private void openCommunication() {
 
         if (socket4Client == null) {
             try {
@@ -137,21 +192,21 @@ class Imatic8BoardData {
                 // timeout if no connect within 2 seconds (as this is a local network
                 // arrangement)
                 this.socket4Client.connect(new InetSocketAddress(
-                        Imatic8Constants.IMATIC8_IP_ADDR,
-                        Imatic8Constants.IMATIC8_PORT_NO),
-                        Imatic8Constants.TIMEOUT_FOR_CONNECTION_SETUP);
+                        this.boardIpAddr,
+                        this.boardPortNo),
+                        Im8Constants.TIMEOUT_FOR_CONNECTION_SETUP);
 
             } catch (IOException ex) {
-                System.err.println(errorMsg(ex));
+                this.m8Io.err(-99).sprintln(ERROR_RT_IO,
+                        errorMsg(String.format("b-%d", this.getBoardNumber()),
+                                ex));
                 this.socket4Client = null;
-                return null;
             }
         }
-        return this.socket4Client;
     }
 
     /**
-     * Close the connection to the Imatic8 board and indicate so.
+     * Close the connection to board N and indicate so.
      *
      * @return false if failed to close
      */
@@ -172,7 +227,8 @@ class Imatic8BoardData {
             socket4Client = null;
 
         } catch (IOException ex1) {
-            System.err.println(errorMsg(ex1));
+            m8Io.err(-99).sprintln(ERROR_RT_IO,
+                    errorMsg(String.format("b-%d", this.getBoardNumber()), ex1));
             socket4Client = null;
             return false;
         }
@@ -180,7 +236,7 @@ class Imatic8BoardData {
     }
 
     /**
-     * Send message to the board and return response.
+     * Send message to board N and return response.
      *
      * @param pMsg                        message to send
      * @param closeConnectionOnCompletion true if this is the last request in
@@ -188,7 +244,7 @@ class Imatic8BoardData {
      *
      * @return response in raw-data byte form
      */
-    byte[] sendMessage2TheBoard(Imatic8RelayInfo action,
+    byte[] sendMessage2TheBoard(Im8RelayInfo action,
             int relayNumber, boolean closeConnectionOnCompletion) {
         // get the bytes for the processing
         byte[] pMsg = action.getMessageBytesForRelayAction(relayNumber);
@@ -203,21 +259,9 @@ class Imatic8BoardData {
         //    e.g.       $vm = 'PXDEPCSERV:20001';
         //
         // do we have a communication port to the Imatic8 board, if not get one
+        openCommunication();
         if (this.socket4Client == null) {
-            try {
-                this.socket4Client = new Socket();
-                // timeout if no connect within 2 seconds (as this is a local network
-                // arrangement)
-                this.socket4Client.connect(new InetSocketAddress(
-                        Imatic8Constants.IMATIC8_IP_ADDR,
-                        Imatic8Constants.IMATIC8_PORT_NO),
-                        Imatic8Constants.TIMEOUT_FOR_CONNECTION_SETUP);
-
-            } catch (IOException ex) {
-                System.err.println(errorMsg(ex));
-                this.socket4Client = null;
-                return null;
-            }
+            return null;
         }
         // send message to the board-server
         DataOutputStream toSvrData;
@@ -228,14 +272,17 @@ class Imatic8BoardData {
 
         } catch (IOException ex) {
             try {
-
                 socket4Client.close();
+
             } catch (IOException ex1) {
-                System.err.println(errorMsg(ex1));
+                this.m8Io.err(-96).sprintln(ERROR_RT_IO,
+                        errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
+                        ex1));
+                return null;
             }
-            System.err.printf("%s\n%s",
-                    action.getFailureString(relayNumber),
-                    errorMsg(ex));
+            this.m8Io.err(-97).sprintln(ERROR_RT_IO,
+                    errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
+                    ex));
             return null;
         }
         // get response from the board-server
@@ -247,13 +294,17 @@ class Imatic8BoardData {
             fromSvrDataNumBytes = fromSvrData.read(bufferInputBytesArr);
 
         } catch (IOException ex) {
-            System.err.println(errorMsg(ex));
+            this.m8Io.err(-96).sprintln(ERROR_RT_IO,
+                    errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
+                            ex));
             fromSvrDataNumBytes = -1;
         }
         // only if there is a response do we set the relay state
         if (fromSvrDataNumBytes == -1) {
             // no response, so make it known
-            System.err.printf("%s", action.getFailureString(relayNumber));
+            this.m8Io.err(-92).sprintf(ERROR_RT_IO,
+                    errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
+                            null));
         } else {
             // 
             recorder.setRelayRecord(bufferInputBytesArr);
@@ -269,12 +320,10 @@ class Imatic8BoardData {
         return bufferInputBytesArr;
     }
 
-    private String errorMsg(IOException ex) {
-        return String.format("ERROR IO: %s", ex.getMessage());
-    }
-
+    /**
+     * Report the states of the relays of board N.
+     */
     void reportRelayStates() {
         this.recorder.reportRelayStates();
     }
-
 }
