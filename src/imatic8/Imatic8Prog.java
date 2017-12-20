@@ -27,13 +27,6 @@
  */
 package imatic8;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-
 /**
  * Program (main) that will interact with a Version 1.1 Imatic8 board to set
  * relays on or off on a compatible 8-channel 5V relay board&#46; The Imatic8
@@ -75,7 +68,7 @@ import java.util.ArrayList;
          = new Imatic8IoIf((new String[]{arg0, arg1, arg2.....);
  myMatic8.runAsLib();
  </pre>
- * <p style="font-size: 0.85em;"> See <i>{@link imatic8.Imatic8IoIf}</i>        
+ * <p style="font-size: 0.85em;"> See <i>{@link imatic8.Im8Io}</i>        
  * </p>
  * </td>
  * </tr></table>
@@ -230,17 +223,24 @@ import java.util.ArrayList;
  * @author dbradley
  */
 public class Imatic8Prog {
+    
+    /**
+     * Change this variable to have the HELP text change automatically.
+     * <p>
+     * The Javadoc will need to be changed to the changed program-name.
+     */
+    public final static String programName = "Imatic8Prog";
 
     private Imatic8Prog() {
         //
     }
 
     /**
+     * Program main entry.
+     * 
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        // TODO code application logic here
-
         if (args.length == 0) {
             // interactive mode
             Im8ModeInteractive.processInteractiveMode();

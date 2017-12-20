@@ -30,7 +30,6 @@ package imatic8;
 import static imatic8.Im8Constants.MAX_RELAY_NUMBER;
 import static imatic8.Im8Constants.MIN_RELAY_NUMBER;
 import static imatic8.Im8Io.ErrorKind.CRITICAL;
-import static imatic8.Im8Io.ErrorKind.ERROR_ARG;
 import static imatic8.Im8Io.ErrorKind.ERROR_INI;
 import java.io.File;
 import java.io.FileFilter;
@@ -59,8 +58,7 @@ class Im8BoardIni extends Properties {
     private static final int IMATIC8_PORT_NO = 30000;
 
     private final static String RECORDER_FILE_NAME_LEAD = "Imatic8Record";
-
-    private final static String RECORDER_FILE_NAME = RECORDER_FILE_NAME_LEAD + "%s.ini";
+    private static String RECORDER_FILE_NAME = RECORDER_FILE_NAME_LEAD + "%s.ini";
 
     private final static String PROP_IP_STRING = "ip";
     private final static String PROP_PORT_STRING = "port";
@@ -124,6 +122,12 @@ class Im8BoardIni extends Properties {
                 String.format(RECORDER_FILE_NAME, boardNumberP));
     }
 
+   
+    /**
+     * Print all INI file settings to out stream.
+     *
+     * @param m8IoP
+     */
     static void printAllBoardIniFiles(Im8Io m8IoP) {
 
         String userDir = System.getProperty("user.dir");

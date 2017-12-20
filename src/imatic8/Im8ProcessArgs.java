@@ -216,7 +216,7 @@ class Im8ProcessArgs {
                     // need to load the board so active board actions
                     // may be processed
                     if (activeBoardN > 0) {
-                        if (!Im8BoardData.loadBoardObject(m8Io, activeBoardN)) {
+                        if (!Im8BoardController.loadBoardObject(m8Io, activeBoardN)) {
                             errorFound = true;
                             m8Io.err(-2).sprintf(ERROR_ARG,
                                     "Board %d not defined: %s\n", activeBoardN, argI);
@@ -228,7 +228,9 @@ class Im8ProcessArgs {
         // if the command has no errors then we can process the 
         // actions
         if (!errorFound) {
-            processAction();
+            if(processAction()){
+                 m8Io.out(0);
+            }
         }
     }
 

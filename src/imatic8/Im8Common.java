@@ -166,9 +166,9 @@ class Im8Common {
 
     /** The help brief documentation. */
     private static final String[] helpDocLinesArr = new String[]{
-        "Usage: - Command-line mode = 'Imatic8Prog.jar [args]'",
-        "          'Imatic8Prog.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 b-2 on 1'",
-        " or    - Interactive mode  = 'Imatic8Prog.jar'",
+        String.format("Usage: - Command-line mode = '%s.jar [args]'", Imatic8Prog.programName),
+        String.format("          '%s.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 b-2 on 1'", Imatic8Prog.programName),
+        String.format(" or    - Interactive mode  = '%s.jar'", Imatic8Prog.programName),
         "          I>[ args | exit | quit | q]     [eg. I>'on 1 2 ms;500 on 3 ] b-2 on 4' | 'exit'",
         "          I> ---> next",
         "[args...]",

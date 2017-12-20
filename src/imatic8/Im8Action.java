@@ -41,7 +41,7 @@ import static imatic8.Im8RelayInfo.RELAY_ON;
  */
 class Im8Action {
 
-    private Im8BoardData boardController = null;
+    private Im8BoardController boardController = null;
 
     /**
      * Board being controlled on.
@@ -63,7 +63,7 @@ class Im8Action {
         this.m8Io = m8Io;
 
         // the board controller object have already been set up so
-        this.boardController = Im8BoardData.createReuseBoardNFromINI(m8Io, boardN);
+        this.boardController = Im8BoardController.createReuseBoardNFromINI(m8Io, boardN);
     }
 
     /**

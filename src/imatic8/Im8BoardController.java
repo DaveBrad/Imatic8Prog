@@ -27,7 +27,6 @@
  */
 package imatic8;
 
-import imatic8.Im8Io.ErrorKind;
 import static imatic8.Im8Io.ErrorKind.ERROR_RT_IO;
 import static imatic8.Im8Io.errorMsg;
 import java.io.DataInputStream;
@@ -42,9 +41,9 @@ import java.util.HashMap;
  *
  * @author dbradley
  */
-class Im8BoardData {
+class Im8BoardController {
 
-    private final static HashMap<Integer, Im8BoardData> boardNDataHash = new HashMap<>();
+    private final static HashMap<Integer, Im8BoardController> boardNDataHash = new HashMap<>();
 
     private int boardN;
     private String boardIpAddr;
@@ -66,11 +65,11 @@ class Im8BoardData {
      * @return the board object, null if there is no board INI file and thus
      * needs to be created
      */
-    static Im8BoardData createReuseBoardNFromINI(Im8Io m8IoP, int boardNumberP) {
+    static Im8BoardController createReuseBoardNFromINI(Im8Io m8IoP, int boardNumberP) {
         if (boardNDataHash.containsKey(boardNumberP)) {
 
             // modify the m8Io setting as it is different for reuse
-            Im8BoardData nuBoardData = boardNDataHash.get(boardNumberP);
+            Im8BoardController nuBoardData = boardNDataHash.get(boardNumberP);
             nuBoardData.m8Io = m8IoP;
 
             return nuBoardData;
@@ -82,7 +81,7 @@ class Im8BoardData {
             }
         }
         // an INI file needs to exist for a board object to be created
-        Im8BoardData nuBoarddata = new Im8BoardData(m8IoP, boardNumberP);
+        Im8BoardController nuBoarddata = new Im8BoardController(m8IoP, boardNumberP);
 
         nuBoarddata.boardN = boardNumberP;
         nuBoarddata.boardPortNo = 30000;
@@ -95,10 +94,10 @@ class Im8BoardData {
         return nuBoarddata;
     }
 
-    static Im8BoardData defineBoardObject(Im8Io m8Io, int boardNumberP, String boardIpAddrP) {
+    static Im8BoardController defineBoardObject(Im8Io m8Io, int boardNumberP, String boardIpAddrP) {
         // it is known that a file does not exist, so it needs to be
         // created
-        Im8BoardData nuBoarddata = new Im8BoardData(m8Io, boardNumberP);
+        Im8BoardController nuBoarddata = new Im8BoardController(m8Io, boardNumberP);
 
         nuBoarddata.boardN = boardNumberP;
         nuBoarddata.boardIpAddr = boardIpAddrP;
@@ -116,14 +115,14 @@ class Im8BoardData {
     static boolean loadBoardObject(Im8Io m8IoP, int boardNumberP) {
         if (!boardNDataHash.containsKey(boardNumberP)) {
             // the board data object has not been loaded, so load it
-            Im8BoardData nuBoardData = createReuseBoardNFromINI(m8IoP, boardNumberP);
+            Im8BoardController nuBoardData = createReuseBoardNFromINI(m8IoP, boardNumberP);
 
             if (nuBoardData == null) {
                 return false;
             }
         } else {
             // modify the m8Io setting as it is different
-            Im8BoardData nuBoardData = boardNDataHash.get(boardNumberP);
+            Im8BoardController nuBoardData = boardNDataHash.get(boardNumberP);
             nuBoardData.m8Io = m8IoP;
         }
         return true; //  means exists
@@ -136,7 +135,7 @@ class Im8BoardData {
      * @param boardNumberP N board number
      */
     @SuppressWarnings("LeakingThisInConstructor")
-    private Im8BoardData(Im8Io m8IoP, int boardNumberP) {
+    private Im8BoardController(Im8Io m8IoP, int boardNumberP) {
         //
         this.m8Io = m8IoP;
         boardNDataHash.put(boardNumberP, this);
@@ -188,7 +187,8 @@ class Im8BoardData {
 
         if (socket4Client == null) {
             try {
-                this.socket4Client = new Socket();
+                this.socket4Client = Im8Socket.createSocket();
+                
                 // timeout if no connect within 2 seconds (as this is a local network
                 // arrangement)
                 this.socket4Client.connect(new InetSocketAddress(

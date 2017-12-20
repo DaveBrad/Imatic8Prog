@@ -43,14 +43,14 @@ import static imatic8.Im8Constants.RESPONSE_ON_OFF_STATE_BYTE_INDEX;
  */
 class Im8RelayRecorder {
 
-    private final Im8BoardData boardData;
+    private final Im8BoardController boardData;
 
     /**
      * Create the Imatic8 recorder for the relay states. This only represents
      * the state as per command/argument request and not the actual board. The
      * board does not support a relay state query.
      */
-    Im8RelayRecorder(Im8BoardData boardData) {
+    Im8RelayRecorder(Im8BoardController boardData) {
         this.boardData = boardData;
     }
 
