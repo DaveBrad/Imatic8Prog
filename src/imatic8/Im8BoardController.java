@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Class that knows about boards data.
@@ -183,12 +185,24 @@ class Im8BoardController {
      *
      * @return Socket if open, null if an error occurs
      */
+    @SuppressWarnings("CallToPrintStackTrace")
     private void openCommunication() {
 
         if (socket4Client == null) {
             try {
-                this.socket4Client = Im8Socket.createSocket();
-                
+                try {
+                    this.socket4Client = Im8Socket.createSocket();
+                    
+                } catch (InstantiationException | IllegalAccessException ex) {
+                    ex.printStackTrace();
+                    
+                    this.m8Io.err(-99).sprintln(ERROR_RT_IO,
+                            errorMsg(String.format("create sck fail: b-%d  \n%s:%s", 
+                                    this.getBoardNumber(),
+                                    this.boardIpAddr, this.boardPortNo),
+                                    null));
+                }
+
                 // timeout if no connect within 2 seconds (as this is a local network
                 // arrangement)
                 this.socket4Client.connect(new InetSocketAddress(
@@ -198,7 +212,8 @@ class Im8BoardController {
 
             } catch (IOException ex) {
                 this.m8Io.err(-99).sprintln(ERROR_RT_IO,
-                        errorMsg(String.format("b-%d", this.getBoardNumber()),
+                        errorMsg(String.format("open comm: b-%d  \n%s:%s", this.getBoardNumber(),
+                                this.boardIpAddr, this.boardPortNo),
                                 ex));
                 this.socket4Client = null;
             }
@@ -228,7 +243,8 @@ class Im8BoardController {
 
         } catch (IOException ex1) {
             m8Io.err(-99).sprintln(ERROR_RT_IO,
-                    errorMsg(String.format("b-%d", this.getBoardNumber()), ex1));
+                    errorMsg(String.format("close comm: b-%d", this.getBoardNumber()
+                    ), ex1));
             socket4Client = null;
             return false;
         }
@@ -276,13 +292,13 @@ class Im8BoardController {
 
             } catch (IOException ex1) {
                 this.m8Io.err(-96).sprintln(ERROR_RT_IO,
-                        errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
-                        ex1));
+                        errorMsg(String.format("close: b-%d %d", this.getBoardNumber(), relayNumber),
+                                ex1));
                 return null;
             }
             this.m8Io.err(-97).sprintln(ERROR_RT_IO,
-                    errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
-                    ex));
+                    errorMsg(String.format("write: b-%d %d", this.getBoardNumber(), relayNumber),
+                            ex));
             return null;
         }
         // get response from the board-server
@@ -295,18 +311,20 @@ class Im8BoardController {
 
         } catch (IOException ex) {
             this.m8Io.err(-96).sprintln(ERROR_RT_IO,
-                    errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
+                    errorMsg(String.format("read: b-%d %d", this.getBoardNumber(), relayNumber),
                             ex));
-            fromSvrDataNumBytes = -1;
+            fromSvrDataNumBytes = -2;
         }
         // only if there is a response do we set the relay state
         if (fromSvrDataNumBytes == -1) {
+
             // no response, so make it known
             this.m8Io.err(-92).sprintf(ERROR_RT_IO,
-                    errorMsg(String.format("b-%d %d", this.getBoardNumber(), relayNumber),
+                    errorMsg(String.format("response: b-%d %d", this.getBoardNumber(), relayNumber),
                             null));
-        } else {
-            // 
+
+        }
+        if (fromSvrDataNumBytes > 0) {
             recorder.setRelayRecord(bufferInputBytesArr);
         }
         // 
@@ -317,7 +335,10 @@ class Im8BoardController {
                 return null;
             }
         }
-        return bufferInputBytesArr;
+        if (fromSvrDataNumBytes > 0) {
+            return bufferInputBytesArr;
+        }
+        return null;
     }
 
     /**

@@ -88,6 +88,6 @@ class Im8Constants {
         (byte) 0x20, // [2]
         (byte) 0xff, // [3] relay number
         (byte) 0xff, // [4] on of off state
-        (byte) 0x5D // [5]
+        (byte) 0x5d // [5]
     };
 }

@@ -30,44 +30,81 @@ package imatic8;
 import java.net.Socket;
 
 /**
+ * Class that provides a socket for communication to a board-server port of a
+ * specified board IP address.
+ * <p>
+ * The board-server may be real or testing-emulator depending on availability of
+ * an emulator class. As the Imatic8Prog application is simple and explicit,
+ * there is a low security risk or need to hack the application as it is client
+ * invoked and all controlled by what is in the class-path.
  *
  * @author dbradley
  */
-//99
-public class Im8Socket {
+class Im8Socket {
 
-    // "scktstr.Imatic8TestSocket"
-    public static String testSocketObjectName = null;
+    /** the class of the socket or socket-emulator to create a Socket from. */
+    private static Class<?> socketProvidedClass = null;
 
-    static Socket createSocket() {
-        if (testSocketObjectName == null) {
-            return new Socket();
+    private Im8Socket() {
+        //
+    }
+
+    /**
+     * Create a socket (real or emulated) for the Imatic8Prog to use while
+     * running.
+     *
+     * @return Socket object to connect too
+     *
+     * @throws InstantiationException socket creation issue
+     * @throws IllegalAccessException socket creation issue
+     */
+    static Socket createSocket() throws InstantiationException, IllegalAccessException {
+        // once determined to be either Socket or Socket-emulate manner for the create socket
+        // Im8Socket will remain working in that manner. (That is, once set is set for
+        // JVM's runtime life.
+        if (socketProvidedClass != null) {
+            // get an instance of this class
+            return ((Class<Socket>) socketProvidedClass).newInstance();
         }
-        // is the test socket class loaded
-        Im8Socket self = new Im8Socket();
-        ClassLoader cldr = self.getClass().getClassLoader();
+        // otherwise this is the first time and need to determine if this is
+        // is running in a test-environment for either Socket or Socket-emulate manner.
+        //
+        // this may be socket of the emulator-socket-test class type
+        // (all depends on settings in place for the runtime environment) 
+        socketProvidedClass = determineSocketOrSocketEmulate();
 
-        Socket testSocketObject;
+        return ((Class<Socket>) socketProvidedClass).newInstance();
+    }
+
+    /**
+     * Determine if settings for the emulator socket testing environment are in
+     * place.
+     *
+     * @return the a Test-Socket/Socket class depending on emulate/not-emulate
+     */
+    private static Class<?> determineSocketOrSocketEmulate() {
+        // used for testing of the application if the class is present in the
+        // class path.
+        //
+        String emulatorClzzName = "boardemulator.Im8TestSocket";
+
         try {
+            ClassLoader cldr = Im8Socket.class.getClassLoader();
+
             // is the Imatic8TestSocket class loaded
-            Class<?> clzz = cldr.loadClass(testSocketObjectName);
+            Class<?> clzz = cldr.loadClass(emulatorClzzName);
 
             try {
-                // get an instance of this class
-                testSocketObject = (Socket) clzz.newInstance();
-                System.err.println("creating test socket");
+                // get an instance of this emulator class
+                Object concreteSocket = clzz.newInstance();
+                return (Class<Socket>) concreteSocket.getClass();
+
             } catch (InstantiationException | IllegalAccessException ex) {
                 throw new RuntimeException(String.format("Test socket not working: %s", ex.getMessage()));
             }
-
         } catch (ClassNotFoundException ex) {
-            ex.printStackTrace();
-            return new Socket();
+            // assume the Socket class due to no Socket-emulator class available 
         }
-        return testSocketObject;
-    }
-
-    private Im8Socket() {
-
+        return Socket.class;
     }
 }

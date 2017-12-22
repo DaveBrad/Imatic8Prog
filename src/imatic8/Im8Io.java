@@ -68,8 +68,8 @@ public class Im8Io {
         /**
          * error has been found at runtime during IO to the board. */
         ERROR_RT_IO("ERROR-rt IO"),
-        /**
-         * the error has been found during */
+        /** the error has been found
+         * during */
         ERROR_ARG("ERROR-arg"),
         /** the
          * error has been found during processing of a board-N ini file */
