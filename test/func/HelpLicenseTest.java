@@ -1,19 +1,12 @@
 /* Copyright (c) 2017 dbradley. */
 package func;
 
-import imatic8.Imatic8Prog;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.Console;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.jtestdb.aid.console.CcCapture;
+import static org.jtestdb.aid.console.CcCapture.ClearBufferKind.CLEAR_ALL;
+import org.jtestdb.aid.console.CcTerminalInteractive;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
@@ -30,97 +23,130 @@ import org.testng.annotations.Test;
 @Test
 public class HelpLicenseTest {
 
-    @Test
-    public void HelpInteractive() {
-//        CcCapture captureUnit = new CcCapture(System.out);
-//        captureUnit.startCapture();
+    private String uDir;
+    private CcCapture ccOut;
 
-        InputStream origSystemIn = System.in;
+    @BeforeClass
+    public void allocCapture() {
+        this.uDir = System.getProperty("user.dir");
 
-        String input = String.format("help\n");
-//        System.setIn(new ByteArrayInputStream(input.getBytes()));
-
-        BufferedOutputStream outPipe = null;
-
-        PipedInputStream pipeIn = new PipedInputStream();
-        BufferedInputStream in = new BufferedInputStream(pipeIn);
-
-//         System.setIn(pipeIn);
-        PipedOutputStream ppp = new PipedOutputStream();
-
-        try {
-            ppp.connect(pipeIn);
-
-            ppp.write(input.getBytes());
-//            ppp.flush();
-//            ppp.close();
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-
-        System.setIn(in);
-
-      // run the main in its own thread so it starts
-        Runnable r = new Runnable() {
-            @Override
-            public void run() {
-                Imatic8Prog.main(new String[]{});
-            }
-        };
-        // in interactive mode main will wait on the input stream before
-        // preceding to process, so the setIn below acts as an input
-        Thread t = new Thread(r);
-        t.start();
-        
-         try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(HelpLicenseTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-//        captureUnit.stopCapture();
-//        captureUnit.printAllLines();
-
-        System.setIn(origSystemIn);
-
+        this.ccOut = new CcCapture(System.out);
     }
-    
-    
-//    @Test (dependsOnMethods="HelpInteractive")
-//    public void HelpInteractive2() {
-////        CcCapture captureUnit = new CcCapture(System.out);
-////        captureUnit.startCapture();
-//
-//        InputStream origSystemIn = System.in;
-//        
-//        String input = String.format("help\n");
-//        System.setIn(new ByteArrayInputStream(input.getBytes()));
-//
-//        // run the main in its own thread so it starts  
-//        Runnable r = new Runnable() {
-//            @Override
-//            public void run() {
-//                 Imatic8Prog.main(new String[]{});
-//            }
-//        };
-//        // in interactive mode main will wait on the input stream before
-//        // preceding to process, so the setIn below acts as an input
-//        Thread t = new Thread(r);
-//        t.start();
-//        
-//        try {
-//            Thread.sleep(1000);
-//        } catch (InterruptedException ex) {
-//            Logger.getLogger(HelpLicenseTest.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-////        String input = String.format("help");
-////        System.setIn(new ByteArrayInputStream(input.getBytes()));
-//   
-////        captureUnit.stopCapture();
-////        captureUnit.printAllLines();
-//        
-//        System.setIn(origSystemIn);
-//
-//    }
+
+    @AfterClass
+    public void cleanupAfterClass() {
+        if (this.ccOut != null) {
+            this.ccOut.cleanupOnExit();
+            this.ccOut = null;
+        }
+    }
+
+    @Test
+    public void HelpInteractiveHelp() {
+        CcTerminalInteractive termI = new CcTerminalInteractive("termI", System.out, System.err);
+
+        termI.runTerm(this.uDir);
+        termI.enterText(1000, "java -jar dist\\Imatic8Prog.jar");
+
+        this.ccOut.startCapture("*TestNG*");
+        termI.enterText(1000, "help");
+        termI.enterText(1000, "exit");
+
+        this.ccOut.stopCapture();
+
+        this.ccOut.asOrdered("Usage: - Command-line mode = 'Imatic8Prog.jar [args]'")
+                .checkLineNContains(0);
+
+        this.ccOut.clearBuffer(CLEAR_ALL);
+    }
+
+    @Test(dependsOnMethods = "HelpInteractiveHelp")
+    public void HelpInteractiveDashH() {
+        CcTerminalInteractive termI = new CcTerminalInteractive("termI2", System.out, System.err);
+
+        termI.runTerm(this.uDir);
+        termI.enterText(1000, "java -jar dist\\Imatic8Prog.jar");
+
+        this.ccOut.startCapture("*TestNG*");
+        termI.enterText(1000, "-help");
+        termI.enterText(1000, "exit");
+
+        this.ccOut.stopCapture();
+
+        this.ccOut.asOrdered("Usage: - Command-line mode = 'Imatic8Prog.jar [args]'")
+                .checkLineNContains(0);
+        this.ccOut.clearBuffer(CLEAR_ALL);
+    }
+
+    @Test(dependsOnMethods = "HelpInteractiveDashH")
+    public void HelpInteractiveQues() {
+        CcTerminalInteractive termI = new CcTerminalInteractive("termI", System.out, System.err);
+
+        termI.runTerm(this.uDir);
+        termI.enterText(1000, "java -jar dist\\Imatic8Prog.jar");
+
+        this.ccOut.startCapture("*TestNG*");
+        termI.enterText(1000, "?");
+        termI.enterText(1000, "exit");
+
+        this.ccOut.stopCapture();
+
+        this.ccOut.asOrdered("Usage: - Command-line mode = 'Imatic8Prog.jar [args]'")
+                .checkLineNContains(0);
+        this.ccOut.clearBuffer(CLEAR_ALL);
+    }
+
+    @Test(dependsOnMethods = "HelpInteractiveQues")
+    public void HelpInteractiveSlashQues() {
+        CcTerminalInteractive termI = new CcTerminalInteractive("termI", System.out, System.err);
+
+        termI.runTerm(this.uDir);
+        termI.enterText(1000, "java -jar dist\\Imatic8Prog.jar");
+
+        this.ccOut.startCapture("*TestNG*");
+        termI.enterText(1000, "/?");
+        termI.enterText(1000, "exit");
+
+        this.ccOut.stopCapture();
+
+        this.ccOut.asOrdered("Usage: - Command-line mode = 'Imatic8Prog.jar [args]'")
+                .checkLineNContains(0);
+        this.ccOut.clearBuffer(CLEAR_ALL);
+    }
+
+    @Test(dependsOnMethods = "HelpInteractiveSlashQues")
+    public void LicenseInteractiveL() {
+        CcTerminalInteractive termI = new CcTerminalInteractive("termI", System.out, System.err);
+
+        termI.runTerm(this.uDir);
+        termI.enterText(1000, "java -jar dist\\Imatic8Prog.jar");
+
+        this.ccOut.startCapture("*TestNG*");
+        termI.enterText(1000, "l");
+        termI.enterText(1000, "exit");
+
+        this.ccOut.stopCapture();
+
+        this.ccOut.asOrdered("License: Imatic8Prog")
+                .checkLineNContains(2);
+        this.ccOut.clearBuffer(CLEAR_ALL);
+    }
+
+    @Test(dependsOnMethods = "LicenseInteractiveL")
+    public void LicenseInteractiveLicense() {
+        CcTerminalInteractive termI = new CcTerminalInteractive("termI", System.out, System.err);
+
+        termI.runTerm(this.uDir);
+        termI.enterText(1000, "java -jar dist\\Imatic8Prog.jar");
+
+        this.ccOut.startCapture("*TestNG*");
+        termI.enterText(1000, "license");
+        termI.enterText(1000, "exit");
+
+        this.ccOut.stopCapture();
+
+        this.ccOut.asOrdered("License: Imatic8Prog")
+                .checkLineNContains(2);
+        this.ccOut.clearBuffer(CLEAR_ALL);
+    }
 }
