@@ -1,7 +1,6 @@
 /* Copyright (c) 2017 dbradley. */
 package imatic8;
 
-import static imatic8.Im8Io.ErrorKind.ERROR_ARG;
 import java.io.File;
 import java.util.ArrayList;
 import static org.testng.Assert.assertEquals;
