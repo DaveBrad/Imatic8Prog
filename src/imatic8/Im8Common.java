@@ -29,12 +29,31 @@ package imatic8;
 
 import static imatic8.Im8Io.ErrorKind.ERROR_ARG;
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  *
  * @author dbradley
  */
 class Im8Common {
+
+    static String[] tokenSingleLine(String readLn) {
+        ArrayList<String> tokenList = new ArrayList<>();
+
+        // convert the input line into tokens which represent
+        // arguments
+        String[] tokenArr = readLn.split(" ");
+        tokenList.clear();
+
+        for (String s : tokenArr) {
+            if (!s.isEmpty()) {
+                tokenList.add(s);
+            }
+        }
+        // change to an args String[] form
+        String[] argsArr = tokenList.toArray(new String[tokenList.size()]);
+        return argsArr;
+    }
 
     /**
      * Check if a help/license is provided and output
@@ -111,7 +130,7 @@ class Im8Common {
         }
         // only two args are allowed so need to process the IP address
         if (args.length != 2) {
-            m8Io.err(-1).sprintf(ERROR_ARG, "defip-N requires IP address argument following.\n", arg0LC);
+            m8Io.err(-1).sprintf(ERROR_ARG, "defip-%d requires IP address argument following.\n", nBoard, arg0LC);
             return true; // this will be an error condition so stop proceeding forward
         }
         // the following parameter needs to be an IPV4 address string
@@ -120,7 +139,7 @@ class Im8Common {
         String[] ipArgArr = ipArg.split("\\.");
 
         int ipLen = ipArgArr.length;
-        if (ipLen != 4) {
+        if (ipLen != 4 || ipArg.endsWith(".")) {
             m8Io.err(-1).sprintf(ERROR_ARG, "defip-N IP address not nnn.nnn.nnn.nnn (n.n.n.n) format.\n", arg0LC);
             return true; // this will be an error condition so stop proceeding forward
         }
@@ -148,7 +167,7 @@ class Im8Common {
         }
         // create the INI file for the board and the IP address provided, as long
         // as there is not an existing one
-        File boardsIniFile = Im8BoardIni.getBoardIniFile(nBoard);
+        File boardsIniFile = Im8BoardIni.getBoardIniFile(m8Io, nBoard);
 
         if (boardsIniFile.exists()) {
             m8Io.err(-1).sprintf(ERROR_ARG, "defip-N: N %d already exists.\n"
@@ -166,10 +185,14 @@ class Im8Common {
 
     /** The help brief documentation. */
     private static final String[] helpDocLinesArr = new String[]{
-        String.format("Usage: - Command-line mode = '%s.jar [args]'", Imatic8Prog.programName),
-        String.format("          '%s.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 b-2 on 1'", Imatic8Prog.programName),
+        String.format("Usage: - Command-line mode = '%s.jar [args]'",
+        Imatic8Prog.programName),
+        
+        String.format("          '%s.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 b-2 on 1'",
+        Imatic8Prog.programName),
+        
         String.format(" or    - Interactive mode  = '%s.jar'", Imatic8Prog.programName),
-        "          I>[ args | exit | quit | q]     [eg. I>'on 1 2 ms;500 on 3 ] b-2 on 4' | 'exit'",
+        "          I>[ args | exit | quit | q]     [eg. I>'on 1 2 ms:500 on 3 ] b-2 on 4' | 'exit'",
         "          I> ---> next",
         "[args...]",
         "   help | -help | /? | ? | license | l",

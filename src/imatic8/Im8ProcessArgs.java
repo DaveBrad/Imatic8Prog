@@ -447,7 +447,7 @@ class Im8ProcessArgs {
                 // need to check that there is an INI file for this
                 // board number, otherwise it is an error
 
-                File ini4Board = Im8BoardIni.getBoardIniFile(boardValue);
+                File ini4Board = Im8BoardIni.getBoardIniFile(this.m8Io, boardValue);
 
                 if (ini4Board.isFile()) {
                     return boardValue;

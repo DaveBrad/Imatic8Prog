@@ -20,6 +20,8 @@ import java.net.SocketTimeoutException;
  */
 public class Im8TestSocket extends Socket {
 
+    private boolean testEnvironmentInstalled = false;
+
     public Im8TestSocket() {
         //
     }

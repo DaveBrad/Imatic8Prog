@@ -1,15 +1,24 @@
 /* Copyright (c) 2017 dbradley. */
 package boardemulator;
 
+import imatic8.Im8BoardIniTest;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
+import static org.fest.reflect.core.Reflection.staticField;
 
 /**
  * Class that is a server and managers the conversion between real-board IPs and
@@ -24,11 +33,26 @@ import java.util.HashMap;
  */
 public class Im8TestServerMgr4Emulators {
 
+    /**
+     * Chose which
+     */
+    public enum IpAddressKind {
+        /**
+         * The local loop (0.0.0.0, 127.0.0.1)
+         */
+        LOCAL_LOOP,
+        /**
+         * The best network address that is found to be externally accessible by
+         * other computers in a network.
+         */
+        NETWORK
+    }
+
     /** variable for singleton object */
     private static Im8TestServerMgr4Emulators instance;
 
     // server-side
-    private ServerSocket svrSocketMgr;
+    private ServerSocket svrSocket4Mgr;
 
     private Thread svrMgrThread = null;
 
@@ -63,6 +87,79 @@ public class Im8TestServerMgr4Emulators {
     }
 
     /**
+     * Get the server manager IP address for the use in the
+     * -Dtst="n.n.n.n:ppppp" option for interactive testing.
+     *
+     * @param ipKind
+     *
+     * @return string 'n.n.n.n:ppppp'
+     */
+    public String getServerMgrIp(IpAddressKind ipKind) {
+
+        // start the server if it not running
+        startTestServerMgr();
+
+        switch (ipKind) {
+            case LOCAL_LOOP:
+                // get the address for this host
+                this.serversIP = this.svrSocket4Mgr.getInetAddress().getHostAddress();
+                break;
+            case NETWORK:
+                String hostname = this.svrSocket4Mgr.getInetAddress().getHostName();
+                try {
+                    InetAddress some = InetAddress.getByName(hostname);
+
+                    String ip2 = some.getHostAddress();
+
+                    int a = 1;
+                } catch (UnknownHostException ex) {
+                    ex.printStackTrace();
+                }
+
+                this.serversIP = getLocalAddress().getHostAddress();
+                break;
+        }
+        return getServerMgrIp(this.serversIP);
+    }
+
+    /**
+     * Get the server manager IP address for use in the -Dtst="n.n.n.n:ppppp"
+     * option for interactive testing.
+     *
+     * @param ipAddressString n.n.n.n to explicitly used
+     *
+     * @return string 'n.n.n.n:ppppp'
+     */
+    public String getServerMgrIp(String ipAddressString) {
+        // start the server if it not running
+        startTestServerMgr();
+
+        this.serversPort = this.svrSocket4Mgr.getLocalPort();
+
+        String serverAddressStr = String.format("%s:%s", ipAddressString, this.serversPort);
+        System.err.printf("Server mgr address: %s\n", serverAddressStr);
+
+        return serverAddressStr;
+    }
+
+    private static InetAddress getLocalAddress() {
+
+        try {
+            Enumeration<NetworkInterface> b = NetworkInterface.getNetworkInterfaces();
+            while (b.hasMoreElements()) {
+                for (InterfaceAddress f : b.nextElement().getInterfaceAddresses()) {
+                    if (f.getAddress().isSiteLocalAddress()) {
+                        return f.getAddress();
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * Start the test server manager (only one needed) when a test script
      * invokes (say)
      * <pre>Im8TestShadowBoardSvr.createEmulatorForIP("192.168.1.4", 30000);</pre>
@@ -77,7 +174,8 @@ public class Im8TestServerMgr4Emulators {
         if (svrMgrThread == null) {
 
             try {
-                this.svrSocketMgr = new ServerSocket(0);
+                this.svrSocket4Mgr = new ServerSocket(0);
+
             } catch (IOException ex) {
                 // too critical error
                 throw new RuntimeException("No Server Socket allocated", ex.getCause());
@@ -92,8 +190,6 @@ public class Im8TestServerMgr4Emulators {
             // start the thread for the server manager to run in
             svrMgrThread = new Thread(svrMgrRunnable);
             svrMgrThread.start();
-
-            Im8TestPropFile.createEmulatePropFile();
         }
     }
 
@@ -106,7 +202,7 @@ public class Im8TestServerMgr4Emulators {
     private void runTestServerMgr() {
         while (true) {
             try {
-                Socket clientSocket = this.svrSocketMgr.accept();
+                Socket clientSocket = this.svrSocket4Mgr.accept();
 
                 // each message coming in requires different actions:
                 // 1) respond right away
@@ -131,21 +227,23 @@ public class Im8TestServerMgr4Emulators {
             }
         } // while true
     }
+
     /**
-     * Set the real to shadow ip:port addresses in the servers table.
-     * //99
-     * @param realIpKey n.n.n.n:p
-     * @param shadowIpAddr 
+     * Set the real to shadow ip:port addresses in the servers table. //99
+     *
+     * @param realIpKey    n.n.n.n:p
+     * @param shadowIpAddr
      */
-    void setRealToShadowIp2ServerManager(String realIpKey, String shadowIpAddr){
+    void setRealToShadowIp2ServerManager(String realIpKey, String shadowIpAddr) {
         mapRealToShadowIpAddressHash.put(realIpKey, shadowIpAddr);
     }
 
     /**
      * Server-side interface for setting the table.
-     * 
+     *
      * @param inputLine
-     * @return 
+     *
+     * @return
      */
     private String setRealToShadowIP(String inputLine) {
 
@@ -160,8 +258,6 @@ public class Im8TestServerMgr4Emulators {
         setRealToShadowIp2ServerManager(real2ShadowIpsArr[1], real2ShadowIpsArr[2]);
         return String.format(inputLine);
     }
-    
-    
 
     private String getRealToShadowIP(String inputLine) {
         // input should be a board:port address that is the shadowIpKey
@@ -189,20 +285,43 @@ public class Im8TestServerMgr4Emulators {
     @SuppressWarnings("CallToPrintStackTrace")
     public InetSocketAddress getShadowInetSocket2Use(String realBoardIpKey) {
 
-        // the server manage needs to be known and //99
+        // this is done once to ebstablish running with
+        // the server manage needs to be known and 
+        //
+        // the following java command string will launch an extera\nal terminal for a 
+        // the Imatic8Prog and with the test/classes and -Dim8emulater setting will
+        // cause operation to be in 
+        //
+        // terminalImatic8Prog = String.format(
+        //         "java -Dim8emulator=\"%s\" -cp ../build/classes;../build/test/classes imatic8.Imatic8Prog",
+        //        Im8TestServerMgr4Emulators.getInstance().getServerMgrIp(LOCAL_LOOP)); // NETWORK LOCAL_LOOP));
+        //
         if (serversIP == null) {
-            // load the IP and port information
-            byte[] serversIPByteArr = this.svrSocketMgr.getInetAddress().getAddress();
-            serversIP = Im8TestShadowBoardSvr.getIpAddrString(serversIPByteArr);
-            
-            serversPort = this.svrSocketMgr.getLocalPort();
+            // there are 2 conditions
+            // 1) intwractive
+            // 2) command-line
+            //99
+            String tst = System.getProperty("im8emulator");
+
+            if (tst != null) {
+                //99          
+                String[] tstArr = tst.split(":");
+                // ip:port
+                serversIP = tstArr[0];
+                serversPort = Integer.parseInt(tstArr[1]);
+            } else {
+                // 2)
+                // load the IP and port information
+                byte[] serversIPByteArr = this.svrSocket4Mgr.getInetAddress().getAddress();
+                serversIP = Im8TestShadowBoardSvr.getIpAddrString(serversIPByteArr);
+                serversPort = this.svrSocket4Mgr.getLocalPort();
+            }
         }
 
         try (
                 // the assumption is that the server is up and running, if not
                 // then go for a failure and return null
                 Socket clientToSvrMgrSckt = new Socket(serversIP, serversPort);
-                
                 PrintWriter toSvr = new PrintWriter(clientToSvrMgrSckt.getOutputStream(), true);
                 BufferedReader fromSvr = new BufferedReader(
                         new InputStreamReader(clientToSvrMgrSckt.getInputStream()));) {
@@ -268,34 +387,4 @@ public class Im8TestServerMgr4Emulators {
                 ipSplitAddrArr[0],
                 Integer.parseInt(ipSplitAddrArr[1]));
     }
-
-//    /**
-//     * Create and run a thread for a shadow-board-server as an emulator of a
-//     * real board.
-//     *
-//     * @param realBoardIpKey the board IP and port address to be shadowed
-//     *
-//     * @return the board server object for the test environment to process too
-//     *
-//     * @throws IOException unable to process a thread/server-socket
-//     */
-//    static private Im8TestShadowBoardSvr runBoardServer(String realBoardIpKey) throws IOException {
-//        
-//        Im8TestShadowBoardSvr brdSrver;
-//        
-//        if (!mapRealToShadowIpAddressHash.containsKey(realBoardIpKey)) {
-//            // create an Imatic8 board server
-//            brdSrver = new Im8TestShadowBoardSvr();
-//            brdSrver.shadowIpKey = realBoardIpKey;
-//            
-//            brdSrver.svrSocket = new ServerSocket(0);
-//            mapRealToShadowIpAddressHash.put(realBoardIpKey, brdSrver);
-//            
-//        }
-//        brdSrver = mapRealToShadowIpAddressHash.get(realBoardIpKey);
-//        createEmulatePropFile();
-//        brdSrver.startServer();
-//        
-//        return brdSrver;
-//    }
 }

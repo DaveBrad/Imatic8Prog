@@ -1,0 +1,15 @@
+Copyright (c) 2017 dbradley.
+
+This NOTICE_LICENSE.txt file is meant to inform the viewer about Imatic8Prog, a 
+Java application, JAR libraries used for testing.
+
+commons-io-2.5.jar    is licensed under Apache 2.0, 
+                          and acquired from the Maven repository
+fest_reflect.jar      is licensed under Apache 2.0, 
+                          and acquired from the Maven repository
+fest_util.jar         is licensed under Apache 2.0, 
+                          and acquired from the Maven repository
+
+tt_consolecapture.jar    is "Copyright (c) 2013, 2017 dbradley." 
+                            and is not open source,
+                            and is in development

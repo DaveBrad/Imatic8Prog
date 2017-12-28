@@ -28,6 +28,8 @@
 package imatic8;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 /**
@@ -55,7 +57,11 @@ import java.util.ArrayList;
  *
  * @author dbradley
  */
-public class Im8Io {
+class Im8Io {
+
+    private static boolean run1stTime = false;
+
+    static String userDir = null;
 
     /**
      * Error messages from argument processing or during runtime are of these
@@ -68,8 +74,7 @@ public class Im8Io {
         /**
          * error has been found at runtime during IO to the board. */
         ERROR_RT_IO("ERROR-rt IO"),
-        /** the error has been found
-         * during */
+        /** the error has been found during */
         ERROR_ARG("ERROR-arg"),
         /** the
          * error has been found during processing of a board-N ini file */
@@ -133,6 +138,28 @@ public class Im8Io {
         return this.out;
     }
 
+    //99
+    final static void setUserDir(String userDirP) {
+        userDir = userDirP;
+    }
+
+    /**
+     * Get the system userDir for programs running command-line or interactive
+     * mode, or the stored user.dir set by the Imatic8LibMode (library mode).
+     * <p>
+     * The library mode may need to be run based on a specified different
+     * 'user-directory' so control is required.
+     * 
+     * @return String of the user-dir to use 
+     */
+    final static String getUserDir() {
+        if (userDir == null) {
+            return System.getProperty("user.dir");
+        }
+        // the user directory has been explicitly set
+        return userDir;
+    }
+
     final int getExitCode() {
         return this.exitCode;
     }
@@ -179,6 +206,9 @@ public class Im8Io {
         this.err.clear();
         this.out.clear();
 
+        // for testing purposes need to overlay a test environment
+        checkTestEnvironment();
+
         //
         // command line mode
         //
@@ -196,6 +226,53 @@ public class Im8Io {
         }
         // command mode operation
         new Im8ProcessArgs(this).doProcessArgs(args);
+    }
+
+    private void checkTestEnvironment() {
+        if (!run1stTime) {
+            determineSocketOrSocketEmulate();
+            run1stTime = true;
+        }
+    }
+
+    /**
+     * Determine if settings for the emulator socket testing environment are in
+     * place.
+     *
+     * @return the a Test-Socket/Socket class depending on emulate/not-emulate
+     */
+    private static void determineSocketOrSocketEmulate() {
+        // used for testing of the application if the class is present in the
+        // class path.
+        //
+        String emulatorClzzName = "imatic8.Im8BoardIniTest";
+
+        try {
+            // is the Imatic8TestSocket class loaded
+            ClassLoader cldr = Im8Socket.class.getClassLoader();
+            Class<?> clzz = cldr.loadClass(emulatorClzzName);
+            // do the test emulate action to set the environment
+            Object concreteSocket;
+            try {
+                // get an instance of this emulator class
+                concreteSocket = clzz.newInstance();
+
+            } catch (InstantiationException | IllegalAccessException ex) {
+                throw new RuntimeException(String.format("Test socket-emulator not working: %s", ex.getMessage()));
+            }
+            try {
+                Method method = concreteSocket.getClass().getMethod("testEmulate");
+                method.invoke(null);
+
+            } catch (NoSuchMethodException | SecurityException | IllegalArgumentException
+                    | InvocationTargetException | IllegalAccessException ex) {
+                throw new RuntimeException(String.format("Test socket-emulator not working: %s", ex.getMessage()));
+            }
+            return;
+        } catch (ClassNotFoundException ex) {
+            // assume the Socket class due to Socket-emulator class unavailable 
+            int a = 1;
+        }
     }
 
     static String errorMsg(String frontMsg, IOException ex) {

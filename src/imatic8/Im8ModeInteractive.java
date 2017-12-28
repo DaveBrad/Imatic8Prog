@@ -30,13 +30,12 @@ package imatic8;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 
 /**
  *
  * @author dbradley
  */
-public class Im8ModeInteractive {
+class Im8ModeInteractive {
 
     /**
      * Process with the input from console in interactive mode.
@@ -46,7 +45,6 @@ public class Im8ModeInteractive {
 
         // launch a window frame for processing the relays
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        ArrayList<String> tokenList = new ArrayList<>();
 
         // interactive mode will loop until an explicit exit/quit
         while (true) {
@@ -56,21 +54,11 @@ public class Im8ModeInteractive {
                 System.out.flush();
                 String readLn = reader.readLine();
 
-                // convert the input line into tokens which represent
-                // arguments
-                String[] tokenArr = readLn.split(" ");
-                tokenList.clear();
-
-                for (String s : tokenArr) {
-                    if (!s.isEmpty()) {
-                        tokenList.add(s);
-                    }
-                }
                 // change to an args String[] form
-                String[] argsArr = tokenList.toArray(new String[tokenList.size()]);
+                String[] argsArr = Im8Common.tokenSingleLine(readLn);
 
                 // have a basic tokenized, blank lines ignore
-                if (!tokenList.isEmpty()) {
+                if (argsArr.length != 0) {
                     String arg0LC = argsArr[0].toLowerCase();
 
                     // this will system exit 
@@ -90,7 +78,8 @@ public class Im8ModeInteractive {
             }
         } // while true loop
     }
-      /**
+
+    /**
      * Check if an exit is provided in interactive mode and system exit
      *
      * @param arg0 string of lower-case argument 0
@@ -101,7 +90,7 @@ public class Im8ModeInteractive {
         // check for each exit command type in the 0 argument
         for (String exitStr : new String[]{"exit", "quit", "q"}) {
             if (arg0.equals(exitStr)) {
-                
+
                 return true;
             }
         }

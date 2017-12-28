@@ -55,10 +55,12 @@ class Im8BoardIni extends Properties {
     static final String IMATIC8_IP_ADDR = "192.168.1.4";
 
     /** Imatic8 port number */
-    private static final int IMATIC8_PORT_NO = 30000;
+    protected static final int IMATIC8_PORT_NO = 30000;
 
     private final static String RECORDER_FILE_NAME_LEAD = "Imatic8Record";
-    private static String RECORDER_FILE_NAME = RECORDER_FILE_NAME_LEAD + "%s.ini";
+
+    /** protected for the purpose of testing */
+    protected static String RECORDER_FILE_NAME = RECORDER_FILE_NAME_LEAD + "%s.ini";
 
     private final static String PROP_IP_STRING = "ip";
     private final static String PROP_PORT_STRING = "port";
@@ -69,7 +71,7 @@ class Im8BoardIni extends Properties {
     /** INI on state */
     static String IMATIC8_INI_ON_STATE = "on";
 
-    private final int boardN;
+    private int boardN;
 
     //99
     private Im8Io m8Io;
@@ -77,16 +79,16 @@ class Im8BoardIni extends Properties {
     /**
      * The full path for the properties file.
      */
-    private final File propertyFile;
+    private File propertyFile;
 
-    Im8BoardIni(Im8Io m8Io, int boardN) {
-        this(boardN);
-        this.m8Io = m8Io;
+    Im8BoardIni() {
+        super();
     }
 
-    private Im8BoardIni(int boardN) {
+    Im8BoardIni(Im8Io m8Io, int boardN) {
+        this.m8Io = m8Io;
         this.boardN = boardN;
-        this.propertyFile = getBoardIniFile(boardN);
+        this.propertyFile = getBoardIniFile(this.m8Io, boardN);
     }
 
     static boolean defineDefaultBoard1(Im8Io m8Io) {
@@ -94,7 +96,7 @@ class Im8BoardIni extends Properties {
     }
 
     static boolean defineBoardNIni(Im8Io m8Io, int boardN, String ipV4Adress) {
-        Im8BoardIni defineIni = new Im8BoardIni(boardN);
+        Im8BoardIni defineIni = new Im8BoardIni(m8Io, boardN);
         defineIni.m8Io = m8Io;
 
         // need to create the file for the first time
@@ -117,12 +119,12 @@ class Im8BoardIni extends Properties {
      *
      * @return board number File object
      */
-    static File getBoardIniFile(int boardNumberP) {
-        return new File(new File(System.getProperty("user.dir")),
-                String.format(RECORDER_FILE_NAME, boardNumberP));
+    static File getBoardIniFile(Im8Io m8IoP, int boardNumberP) {
+        File userDirFile = new File(m8IoP.getUserDir());
+
+        return new File(userDirFile, String.format(RECORDER_FILE_NAME, boardNumberP));
     }
 
-   
     /**
      * Print all INI file settings to out stream.
      *
@@ -130,7 +132,7 @@ class Im8BoardIni extends Properties {
      */
     static void printAllBoardIniFiles(Im8Io m8IoP) {
 
-        String userDir = System.getProperty("user.dir");
+        String userDir = Im8Io.getUserDir();
 
         File userDirFile = new File(userDir);
 
@@ -180,7 +182,7 @@ class Im8BoardIni extends Properties {
             Collections.sort(boardNArr);
             // format the defined board-N, IP address and port number being used
             for (Integer boardNInt : boardNArr) {
-                Im8BoardIni realIniProperties = new Im8BoardIni(boardNInt);
+                Im8BoardIni realIniProperties = new Im8BoardIni(m8IoP, boardNInt);
 
                 String ipAddr = realIniProperties.getIpAddrStr();
                 int ipPort = realIniProperties.getPortNo();
@@ -222,7 +224,7 @@ class Im8BoardIni extends Properties {
             } catch (NumberFormatException ex) {
                 this.m8Io.err(-10).sprintf(ERROR_INI, "board %s INI file corrupt: %s\n   %s\n ",
                         this.boardN, ex.getMessage(),
-                        getBoardIniFile(this.boardN).getAbsolutePath());
+                        getBoardIniFile(this.m8Io, this.boardN).getAbsolutePath());
             }
         }
         return -1;

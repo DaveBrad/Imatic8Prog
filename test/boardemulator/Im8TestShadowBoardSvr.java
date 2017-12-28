@@ -1,6 +1,7 @@
 /* Copyright (c) 2017 dbradley. All rights reserved. */
 package boardemulator;
 
+import imatic8.Im8BoardIniTest;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -102,6 +103,8 @@ public class Im8TestShadowBoardSvr {
      */
     @SuppressWarnings("CallToPrintStackTrace")
     static public Im8TestShadowBoardSvr createEmulatorForIP(String realBoardIp, int portNo) {
+        
+        Im8BoardIniTest.testEmulate();
 
         // the test server manager needs to be running, only one is needed on the
         // local host (dealt with by Im8TestServerMgr4Emulators).
@@ -303,11 +306,11 @@ public class Im8TestShadowBoardSvr {
     }
 
     /**
-     * Test restart the server.
+     * Test restart the server with timer to wait for restart to complete.
      *
-     * @param timerSeconds time seconds to pause/wait for server to restart
+     * @param timerMilliSeconds time milli-seconds to pause/wait for server to restart
      */
-    public void testRestartServer(int timerSeconds) {
+    public void testRestartServer(int timerMilliSeconds) {
         if (this.boardSvrThreadAsEmulator != null) {
             return;
         }
@@ -326,7 +329,7 @@ public class Im8TestShadowBoardSvr {
         this.startServer();
 
         try {
-            Thread.sleep(timerSeconds * 1000);
+            Thread.sleep(timerMilliSeconds);
         } catch (InterruptedException ex) {
         }
     }

@@ -44,6 +44,9 @@ import java.util.ArrayList;
  */
 class Im8PseudoStream {
 
+    private static String END_OF_LINE = String.format("\n");
+    private static int END_OF_LINE_LENGTH = END_OF_LINE.length();
+
     protected final ArrayList<String> arrBuffer4String;
 
     /** Create the IO stream for basic processing of messages. */
@@ -71,12 +74,25 @@ class Im8PseudoStream {
     }
 
     /**
-     * Get the array buffer for independent processing by the invoker.
+     * Get array buffer for independent processing by an invoker, any cr-lf/lf
+     * at the end-of-a-line are removed.
+     * <p>
+     * The end-of-line kind cr-lf/lf  depends on the running platform. 
      *
      * @return array list of string
      */
     final public ArrayList<String> getBufferArray() {
-        return this.arrBuffer4String;
+        // need to return a buffer copy, so the user array-list is
+        // unaffected
+        ArrayList<String> copyOfBuffer = new ArrayList<>();
+
+        for (String s : this.arrBuffer4String) {
+            if (s.endsWith(END_OF_LINE)) {
+                s = s.substring(0, s.length() - END_OF_LINE_LENGTH);
+            }
+            copyOfBuffer.add(s);
+        }
+        return copyOfBuffer;
     }
 }
 
@@ -95,6 +111,7 @@ class Im8PseudoStreamOut extends Im8PseudoStream {
      */
     final void sprintf(String format, Object... args) {
         String formatted = String.format(format, args);
+
         this.arrBuffer4String.add(formatted);
     }
 
@@ -139,7 +156,7 @@ class Im8PseudoStreamErr extends Im8PseudoStream {
      */
     final void sprintln(ErrorKind errorKind, String str) {
         String formatted = String.format("%s\n", str);
-        
+
         // prefix the error-kind
         if (errorKind != null) {
             formatted = String.format("%s: %s", errorKind.getErrMsgPrefix(), formatted);

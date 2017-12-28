@@ -42,8 +42,10 @@ import java.net.Socket;
  */
 class Im8Socket {
 
-    /** the class of the socket or socket-emulator to create a Socket from. */
-    private static Class<?> socketProvidedClass = null;
+    /** the class of the socket or socket-emulator to create a Socket from. this
+     * will be overridden if the emulator testing environment is in place.
+     */
+    static Class<?> socketProvidedClass = Socket.class;
 
     private Im8Socket() {
         //
@@ -59,52 +61,39 @@ class Im8Socket {
      * @throws IllegalAccessException socket creation issue
      */
     static Socket createSocket() throws InstantiationException, IllegalAccessException {
-        // once determined to be either Socket or Socket-emulate manner for the create socket
-        // Im8Socket will remain working in that manner. (That is, once set is set for
-        // JVM's runtime life.
-        if (socketProvidedClass != null) {
-            // get an instance of this class
-            return ((Class<Socket>) socketProvidedClass).newInstance();
-        }
-        // otherwise this is the first time and need to determine if this is
-        // is running in a test-environment for either Socket or Socket-emulate manner.
-        //
-        // this may be socket of the emulator-socket-test class type
-        // (all depends on settings in place for the runtime environment) 
-        socketProvidedClass = determineSocketOrSocketEmulate();
-
+        // get an instance of a socket class
         return ((Class<Socket>) socketProvidedClass).newInstance();
     }
 
-    /**
-     * Determine if settings for the emulator socket testing environment are in
-     * place.
-     *
-     * @return the a Test-Socket/Socket class depending on emulate/not-emulate
-     */
-    private static Class<?> determineSocketOrSocketEmulate() {
-        // used for testing of the application if the class is present in the
-        // class path.
-        //
-        String emulatorClzzName = "boardemulator.Im8TestSocket";
-
-        try {
-            ClassLoader cldr = Im8Socket.class.getClassLoader();
-
-            // is the Imatic8TestSocket class loaded
-            Class<?> clzz = cldr.loadClass(emulatorClzzName);
-
-            try {
-                // get an instance of this emulator class
-                Object concreteSocket = clzz.newInstance();
-                return (Class<Socket>) concreteSocket.getClass();
-
-            } catch (InstantiationException | IllegalAccessException ex) {
-                throw new RuntimeException(String.format("Test socket not working: %s", ex.getMessage()));
-            }
-        } catch (ClassNotFoundException ex) {
-            // assume the Socket class due to no Socket-emulator class available 
-        }
-        return Socket.class;
-    }
+//99    /**
+//     * Determine if settings for the emulator socket testing environment are in
+//     * place.
+//     *
+//     * @return the a Test-Socket/Socket class depending on emulate/not-emulate
+//     */
+//    private static Class<?> determineSocketOrSocketEmulate() {
+//        // used for testing of the application if the class is present in the
+//        // class path.
+//        //
+//        String emulatorClzzName = "boardemulator.Im8TestSocket";
+//
+//        try {
+//            ClassLoader cldr = Im8Socket.class.getClassLoader();
+//
+//            // is the Imatic8TestSocket class loaded
+//            Class<?> clzz = cldr.loadClass(emulatorClzzName);
+//
+//            try {
+//                // get an instance of this emulator class
+//                Object concreteSocket = clzz.newInstance();
+//                return (Class<Socket>) concreteSocket.getClass();
+//
+//            } catch (InstantiationException | IllegalAccessException ex) {
+//                throw new RuntimeException(String.format("Test socket not working: %s", ex.getMessage()));
+//            }
+//        } catch (ClassNotFoundException ex) {
+//            // assume the Socket class due to no Socket-emulator class available 
+//        }
+//        return Socket.class;
+//    }
 }

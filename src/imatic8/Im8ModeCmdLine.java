@@ -31,7 +31,7 @@ package imatic8;
  *
  * @author dbradley
  */
-public class Im8ModeCmdLine {
+class Im8ModeCmdLine {
 
     static void processCmdLineMode(String[] args) {
         // command line mode

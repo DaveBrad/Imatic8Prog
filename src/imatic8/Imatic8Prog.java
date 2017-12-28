@@ -59,16 +59,20 @@ package imatic8;
  * <td style="background: #c6f3ed">
  * <pre>
  * Imatic8Prog.jar&nbsp;
- * I&gt;[arguments]
+ * <span style="color: magenta;">I&gt;</span>[arguments]
  * </pre>
  * </td>
  * <td style="background: #ffffcc;">
  * <pre>
- Imatic8IoIf myMatic8 
-         = new Imatic8IoIf((new String[]{arg0, arg1, arg2.....);
- myMatic8.runAsLib();
- </pre>
- * <p style="font-size: 0.85em;"> See <i>{@link imatic8.Im8Io}</i>        
+ * Imatic8LibMode libObject = new Imatic8LibMode();
+ *
+ * libObject.execute("off 4");
+ * if(libObject.getExitCode() &lt; 0){
+ *  <span style="font-size: 0.85em; font-style: italic; color: #00cc99;">  error code</span>
+ * }else{
+ *  <span style="font-size: 0.85em; font-style: italic; color: #00cc99;">  success code</span>
+ * }</pre>
+ * <p style="font-size: 0.85em;"> See <i>{@link imatic8.Imatic8LibMode}</i>
  * </p>
  * </td>
  * </tr></table>
@@ -178,21 +182,21 @@ package imatic8;
  * number&nbsp;&nbsp;&nbsp; 'nnn' 0-255 IPV4 number</div>
  * </td>
  * </tr>
- * 
+ *
  * <tr>
- * <td style="background: #ffffe6; vertical-align:top; width: 17ch;">query defined<br>board all N</td>
+ * <td style="background: #ffffe6; vertical-align:top; width: 17ch;">query
+ * defined<br>board all N</td>
  * <td style="background: #ffffe6; vertical-align:top">
  * <pre> <span style="color: green;">defip</span>
  * </pre>
  * </td>
  *
  * <td style="background: #ffffe6; vertical-align:top"><pre style="margin-bottom: 0px;">
- *b-1 : 192.168.1.4:30000
- *b-2 : 192.168.1.4:30000
- *b-10 : 192.168.1.5:30000</pre>
+ * b-1 : 192.168.1.4:30000 b-2 : 192.168.1.4:30000 b-10 :
+ * 192.168.1.5:30000</pre>
  * </td>
  * </tr>
- * 
+ *
  * <tr>
  * <td style="background: #ffffe6; vertical-align:top"></td>
  * <td style="background: #ffffe6; vertical-align:top" colspan="2">
@@ -223,7 +227,7 @@ package imatic8;
  * @author dbradley
  */
 public class Imatic8Prog {
-    
+
     /**
      * Change this variable to have the HELP text change automatically.
      * <p>
@@ -237,7 +241,7 @@ public class Imatic8Prog {
 
     /**
      * Program main entry.
-     * 
+     *
      * @param args the command line arguments
      */
     public static void main(String[] args) {
