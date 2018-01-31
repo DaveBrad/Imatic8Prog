@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
  *
  * <p>
  * Due to fact that responses need to be tested via the console, and only one
- * console per test run is allowed test are written as sequential using TestNG.
+ * console per test run is allowed tests are written as sequential using TestNG.
  * <p>
  * Tests involve the three modes of command-line, interactive and library
  * execution.

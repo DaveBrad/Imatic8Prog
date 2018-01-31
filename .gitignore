@@ -1,2 +1,5 @@
 /Imatic8Record*.ini
 /TESTDIR
+/nbproject/private/
+/build/
+/.jacocodbrad/
