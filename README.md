@@ -1,19 +1,26 @@
 A Java JAR program that will drive an 8 channel 5V relay board via an
 Imatic control board. (The project was Netbeans 8.2 created.)
 
-    Usage: - Command-line mode 
-        eg.    Imatic8Prog.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 3
-     or    - Interactive mode
-        eg.    Imatic8Prog.jar
-               I>on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 3
-    [args...]
-       help | -help | /? | ? | license | l   [ exit | quit | q   - interactive only -]
-     - operations -
-       on n [n [n...]]] | on all       (on relays)
-       off n [n [n...]]] | off all     (off relays)
-       s:N | ms:N                      (pause N seconds/milliseconds)
-       status                          ( 'Status:12--5---'                digit=ON      )
-                                       (  > board has no query, so best guess status <  }
+Supports N boards for boards that have their IP changed.
+
+Usage: - Command-line mode = 'Imatic8Prog.jar [args]'
+          'Imatic8Prog.jar on 1 2 ms:500 on 3 s:10 off 1 s:2 off 2 b-2 on 1'
+ or    - Interactive mode  = 'Imatic8Prog.jar'
+          I>[ args | exit | quit | q]     [eg. I>'on 1 2 ms:500 on 3 ] b-2 on 4' | 'exit'
+          I> ---> next
+[args...]
+   help | -help | /? | ? | license | l
+ - setup -
+   defIP-N nnn.nnn.nnn.nnn         ( define an IP address to associate with board-N )
+   defIP                           ( query the defined board-N to IP addresses  )
+ - operations -
+   b-N                             ( set board N, ~ no b-N defaults to 'b-1' ~)
+   on n [n [n...]]] | on all       ( on relays, b-1 if no preceding b-N )
+   off n [n [n...]]] | off all     ( off relays, b-1 if no preceding b-N )
+   s:N | ms:N                      ( pause N seconds/milliseconds )
+   status                          ( 'Status:b-1:12--5---'    b-N=board-N  digit=ON
+                                       b-1 if no preceding b-N
+                                      > board has no query, so best guess status <  )
 
 
 The Imatic8 board does not support a relay status query, so this program 
