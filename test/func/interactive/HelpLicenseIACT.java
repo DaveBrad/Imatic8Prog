@@ -34,7 +34,7 @@ public class HelpLicenseIACT extends IactTestClass{
         // process on the computer doing the testing)
         //
         terminalImatic8Prog = String.format(
-                "java -Dim8emulator=\"%s\" -cp ../build/classes;../build/test/classes imatic8.Imatic8Prog",
+                "java -Dim8emulator=\"%s\" -cp ./build/classes;./build/test/classes imatic8.Imatic8Prog",
                 Im8TestServerMgr4Emulators.getInstance().getServerMgrIp(LOCAL_LOOP)); // NETWORK LOCAL_LOOP));
     }
 

@@ -60,7 +60,7 @@ public class RelayOnOffIACT extends Imatic8aseTest {
         // the test cases are only run on a local host thus local_loop is required for
         // the commication of inter-process communication
         terminalImatic8Prog = String.format(
-                "java -Dim8emulator=\"%s\" -cp ../build/classes;../build/test/classes imatic8.Imatic8Prog",
+                "java -Dim8emulator=\"%s\" -cp ./build/classes;./build/test/classes imatic8.Imatic8Prog",
                 Im8TestServerMgr4Emulators.getInstance().getServerMgrIp(LOCAL_LOOP)); // NETWORK LOCAL_LOOP));
     }
 
